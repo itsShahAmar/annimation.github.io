@@ -1,0 +1,48 @@
+name: Funny Animation Shorts Factory
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'  # Run every 6 hours
+  workflow_dispatch:  # Allow manual trigger
+
+concurrency:
+  group: funny-animation-shorts
+  cancel-in-progress: false  # Let the running job finish; queue at most one
+
+jobs:
+  funny-animation-shorts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg imagemagick fonts-liberation
+
+      - name: Fix ImageMagick security policy for MoviePy text rendering
+        run: |
+          # Allow @filename reads needed by MoviePy TextClip
+          if [ -f /etc/ImageMagick-6/policy.xml ]; then
+            sudo sed -i 's/<policy domain="path" rights="none" pattern="@\*"/<policy domain="path" rights="read|write" pattern="@\*"/g' /etc/ImageMagick-6/policy.xml
+          fi
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run Funny Animation Shorts Factory pipeline
+        env:
+          YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          YOUTUBE_TOKEN: ${{ secrets.YOUTUBE_TOKEN }}
+          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+          NEWSAPI_KEY: ${{ secrets.NEWSAPI_KEY }}
+        run: python -m src.pipeline
