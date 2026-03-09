@@ -1,0 +1,1477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🎬 Funny Animation Shorts Factory — Free Viral Comedy Shorts</title>
+  <meta name="description" content="Automatically generate hilarious animated comedy YouTube Shorts that go viral. Powered by AI comedy scripts, animated visuals, and professional voice acting — all 100% free.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #09090b;
+      --surface: rgba(255,255,255,0.04);
+      --surface2: rgba(255,255,255,0.06);
+      --surface-hover: rgba(255,255,255,0.08);
+      --accent: #ff6b35;
+      --accent-light: #ff9a3c;
+      --accent-glow: rgba(255,107,53,0.35);
+      --accent2: #ffd700;
+      --green: #22c55e;
+      --green-bg: rgba(34,197,94,0.1);
+      --green-border: rgba(34,197,94,0.25);
+      --orange: #f59e0b;
+      --orange-bg: rgba(245,158,11,0.1);
+      --orange-border: rgba(245,158,11,0.25);
+      --red: #ef4444;
+      --text: #fafafa;
+      --text-secondary: #a1a1aa;
+      --text-muted: #71717a;
+      --border: rgba(255,255,255,0.08);
+      --border-hover: rgba(255,255,255,0.15);
+      --input-bg: rgba(0,0,0,0.4);
+      --code-bg: rgba(0,0,0,0.5);
+      --gradient-1: linear-gradient(135deg, #ff6b35, #ff4500, #ffd700);
+      --gradient-2: linear-gradient(135deg, rgba(255,107,53,0.18), rgba(255,215,0,0.10));
+      --radius: 16px;
+      --radius-sm: 10px;
+      --radius-xs: 6px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* Animated background mesh */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 50% -20%, rgba(255,107,53,0.15), transparent),
+        radial-gradient(ellipse 60% 50% at 80% 50%, rgba(255,215,0,0.08), transparent),
+        radial-gradient(ellipse 50% 40% at 20% 80%, rgba(255,69,0,0.08), transparent);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ── Navigation ───────────────────────────────────────────── */
+    nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 0;
+      margin-bottom: 1rem;
+    }
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: var(--text);
+      text-decoration: none;
+    }
+    .nav-brand .logo-icon {
+      width: 32px;
+      height: 32px;
+      background: var(--gradient-1);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9rem;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .nav-link {
+      padding: 0.45rem 0.9rem;
+      border-radius: var(--radius-xs);
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    .nav-link:hover { color: var(--text); background: var(--surface2); }
+    .nav-link-primary {
+      background: var(--accent);
+      color: #fff !important;
+    }
+    .nav-link-primary:hover { background: var(--accent-light); }
+
+    /* ── Hero ──────────────────────────────────────────────────── */
+    .hero {
+      text-align: center;
+      padding: 4rem 0 3.5rem;
+    }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.35rem 1rem;
+      border-radius: 50px;
+      background: var(--green-bg);
+      border: 1px solid var(--green-border);
+      color: var(--green);
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+      letter-spacing: 0.02em;
+    }
+    .hero-badge .pulse {
+      width: 6px; height: 6px;
+      background: var(--green);
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(1.5); }
+    }
+    .hero h1 {
+      font-size: clamp(2.2rem, 5vw, 3.5rem);
+      font-weight: 800;
+      line-height: 1.15;
+      margin-bottom: 1.25rem;
+      letter-spacing: -0.03em;
+    }
+    .hero h1 .gradient-text {
+      background: var(--gradient-1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero-subtitle {
+      color: var(--text-secondary);
+      font-size: 1.15rem;
+      max-width: 580px;
+      margin: 0 auto 2rem;
+      line-height: 1.7;
+    }
+    .hero-actions {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    /* ── Buttons ───────────────────────────────────────────────── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.7rem 1.4rem;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      font-family: inherit;
+      line-height: 1.4;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(0); }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 4px 16px var(--accent-glow);
+    }
+    .btn-primary:hover {
+      background: var(--accent-light);
+      box-shadow: 0 8px 24px var(--accent-glow);
+    }
+    .btn-primary:disabled {
+      background: #333;
+      box-shadow: none;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-outline {
+      background: transparent;
+      color: var(--text-secondary);
+      border: 1px solid var(--border);
+    }
+    .btn-outline:hover {
+      background: var(--surface2);
+      color: var(--text);
+      border-color: var(--border-hover);
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-secondary);
+    }
+    .btn-ghost:hover { color: var(--text); background: var(--surface); }
+
+    /* ── Stats bar ─────────────────────────────────────────────── */
+    .stats-bar {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+      margin-bottom: 3rem;
+    }
+    .stat-item {
+      text-align: center;
+      padding: 1.5rem 1rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      transition: all 0.3s;
+    }
+    .stat-item:hover {
+      border-color: var(--border-hover);
+      background: var(--surface-hover);
+      transform: translateY(-2px);
+    }
+    .stat-value {
+      font-size: 1.6rem;
+      font-weight: 800;
+      background: var(--gradient-1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .stat-label {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 0.25rem;
+      font-weight: 500;
+    }
+
+    /* ── Cards ──────────────────────────────────────────────────── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 2rem;
+      margin-bottom: 1.25rem;
+      backdrop-filter: blur(12px);
+      transition: border-color 0.3s;
+    }
+    .card:hover { border-color: var(--border-hover); }
+    .card h2 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+    .card h2 .step {
+      background: var(--gradient-1);
+      color: #fff;
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .card-description {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      margin-bottom: 1.25rem;
+    }
+
+    /* ── Section headers ───────────────────────────────────────── */
+    .section-header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    .section-header h2 {
+      font-size: 1.75rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      justify-content: center;
+    }
+    .section-header p {
+      color: var(--text-secondary);
+      margin-top: 0.5rem;
+    }
+    .section-divider {
+      width: 48px;
+      height: 3px;
+      background: var(--gradient-1);
+      border-radius: 2px;
+      margin: 3rem auto;
+    }
+
+    /* ── Forms ──────────────────────────────────────────────────── */
+    label {
+      display: block;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      margin-bottom: 0.4rem;
+      font-weight: 500;
+    }
+    input[type="text"], input[type="url"] {
+      width: 100%;
+      padding: 0.7rem 1rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--input-bg);
+      color: var(--text);
+      font-size: 0.9rem;
+      font-family: inherit;
+      outline: none;
+      transition: all 0.2s;
+    }
+    input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+    input::placeholder { color: var(--text-muted); }
+    .input-group { margin-bottom: 1.25rem; }
+    .input-hint {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-top: 0.4rem;
+      line-height: 1.5;
+    }
+    .input-hint a { color: var(--accent-light); text-decoration: none; }
+    .input-hint a:hover { text-decoration: underline; }
+
+    /* ── Status badges ─────────────────────────────────────────── */
+    .status-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+      margin-bottom: 1.25rem;
+    }
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.3rem 0.75rem;
+      border-radius: 50px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      letter-spacing: 0.01em;
+    }
+    .status-pending {
+      background: var(--orange-bg);
+      color: var(--orange);
+      border: 1px solid var(--orange-border);
+    }
+    .status-done {
+      background: var(--green-bg);
+      color: var(--green);
+      border: 1px solid var(--green-border);
+    }
+
+    /* ── Channel info ──────────────────────────────────────────── */
+    .channel-info {
+      display: none;
+      margin-top: 1rem;
+      padding: 1rem 1.25rem;
+      background: var(--green-bg);
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--green-border);
+    }
+    .channel-info.visible { display: flex; align-items: center; gap: 0.75rem; }
+    .channel-info .check-circle {
+      width: 32px; height: 32px;
+      background: var(--green);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 0.9rem;
+    }
+    .channel-info p { font-size: 0.9rem; }
+    .channel-info .channel-id {
+      font-family: 'SF Mono', 'Fira Code', 'JetBrains Mono', monospace;
+      color: var(--accent-light);
+      font-weight: 600;
+    }
+
+    /* ── Token / code display ──────────────────────────────────── */
+    .token-area {
+      display: none;
+      margin-top: 1.25rem;
+    }
+    .token-area.visible { display: block; }
+    .token-box {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 1rem 1.25rem;
+      margin-bottom: 0.75rem;
+      position: relative;
+    }
+    .token-box label {
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 0.5rem;
+      font-size: 0.82rem;
+      letter-spacing: 0.01em;
+    }
+    .token-box pre {
+      font-family: 'SF Mono', 'Fira Code', 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--green);
+      white-space: pre-wrap;
+      word-break: break-all;
+      margin-top: 0.4rem;
+      max-height: 150px;
+      overflow-y: auto;
+      line-height: 1.6;
+    }
+    .copy-btn {
+      position: absolute;
+      top: 0.75rem;
+      right: 0.75rem;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      padding: 0.3rem 0.65rem;
+      border-radius: var(--radius-xs);
+      font-size: 0.72rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+    .copy-btn:hover { background: var(--surface-hover); color: var(--text); }
+
+    /* ── Steps list ────────────────────────────────────────────── */
+    .steps-list {
+      list-style: none;
+      counter-reset: steps;
+    }
+    .steps-list li {
+      padding: 0.75rem 0 0.75rem 2.25rem;
+      position: relative;
+      border-left: 2px solid var(--border);
+      margin-left: 0.6rem;
+      font-size: 0.9rem;
+      line-height: 1.6;
+    }
+    .steps-list li::before {
+      counter-increment: steps;
+      content: counter(steps);
+      position: absolute;
+      left: -0.85rem;
+      top: 0.75rem;
+      width: 26px;
+      height: 26px;
+      background: var(--bg);
+      border: 2px solid var(--border);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+    .steps-list li.done::before {
+      background: var(--green);
+      border-color: var(--green);
+      content: "✓";
+      color: #fff;
+    }
+    .steps-list li a { color: var(--accent-light); text-decoration: none; }
+    .steps-list li a:hover { text-decoration: underline; }
+
+    /* ── Code inline ───────────────────────────────────────────── */
+    code {
+      background: var(--code-bg);
+      padding: 0.15rem 0.45rem;
+      border-radius: 4px;
+      font-size: 0.82em;
+      font-family: 'SF Mono', 'Fira Code', 'JetBrains Mono', monospace;
+      border: 1px solid var(--border);
+    }
+
+    /* ── Notices ────────────────────────────────────────────────── */
+    .notice {
+      background: var(--orange-bg);
+      border: 1px solid var(--orange-border);
+      border-radius: var(--radius-sm);
+      padding: 1rem 1.25rem;
+      margin-top: 1rem;
+      font-size: 0.88rem;
+      color: var(--text-secondary);
+    }
+    .notice-success {
+      background: var(--green-bg);
+      border-color: var(--green-border);
+    }
+
+    /* ── Pipeline / how it works ───────────────────────────────── */
+    .pipeline-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+    }
+    .pipeline-step {
+      padding: 1.5rem 1.25rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      text-align: center;
+      transition: all 0.3s;
+      position: relative;
+      overflow: hidden;
+    }
+    .pipeline-step::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--gradient-1);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .pipeline-step:hover {
+      border-color: var(--border-hover);
+      transform: translateY(-3px);
+    }
+    .pipeline-step:hover::before { opacity: 1; }
+    .pipeline-step .icon {
+      width: 44px;
+      height: 44px;
+      margin: 0 auto 0.75rem;
+      background: var(--gradient-2);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.3rem;
+    }
+    .pipeline-step strong {
+      display: block;
+      font-size: 0.9rem;
+      margin-bottom: 0.25rem;
+    }
+    .pipeline-step .desc {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    /* ── Features grid ─────────────────────────────────────────── */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+    }
+    .feature-card {
+      padding: 1.5rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      transition: all 0.3s;
+    }
+    .feature-card:hover {
+      border-color: var(--border-hover);
+      transform: translateY(-2px);
+    }
+    .feature-card .feature-icon {
+      font-size: 1.5rem;
+      margin-bottom: 0.6rem;
+    }
+    .feature-card h3 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin-bottom: 0.3rem;
+    }
+    .feature-card p {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    /* ── Cost comparison ───────────────────────────────────────── */
+    .cost-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+    .cost-table th {
+      text-align: left;
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-muted);
+      font-weight: 600;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .cost-table td {
+      padding: 0.7rem 1rem;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-secondary);
+    }
+    .cost-table tr:last-child td {
+      border-bottom: none;
+      font-weight: 700;
+      color: var(--green);
+    }
+    .cost-table .free-badge {
+      display: inline-flex;
+      padding: 0.15rem 0.5rem;
+      border-radius: 50px;
+      background: var(--green-bg);
+      color: var(--green);
+      font-size: 0.72rem;
+      font-weight: 600;
+      border: 1px solid var(--green-border);
+    }
+
+    /* ── Toast notification ────────────────────────────────────── */
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 0.75rem 1.25rem;
+      font-size: 0.85rem;
+      color: var(--text);
+      opacity: 0;
+      transition: all 0.4s ease;
+      z-index: 100;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    }
+    .toast.visible {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    /* ── Footer ────────────────────────────────────────────────── */
+    footer {
+      text-align: center;
+      padding: 3rem 0 2rem;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+    }
+    footer a { color: var(--accent-light); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+    .footer-links {
+      display: flex;
+      justify-content: center;
+      gap: 1.5rem;
+      margin-bottom: 0.75rem;
+    }
+
+    /* ── Utility ───────────────────────────────────────────────── */
+    .hidden { display: none !important; }
+
+    /* ── Animations ────────────────────────────────────────────── */
+    .fade-in {
+      opacity: 0;
+      transform: translateY(16px);
+      animation: fadeIn 0.6s ease forwards;
+    }
+    @keyframes fadeIn {
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .fade-in:nth-child(1) { animation-delay: 0s; }
+    .fade-in:nth-child(2) { animation-delay: 0.1s; }
+    .fade-in:nth-child(3) { animation-delay: 0.2s; }
+    .fade-in:nth-child(4) { animation-delay: 0.3s; }
+    .fade-in:nth-child(5) { animation-delay: 0.4s; }
+    .fade-in:nth-child(6) { animation-delay: 0.5s; }
+
+    /* ── Responsive ────────────────────────────────────────────── */
+    @media (max-width: 768px) {
+      .container { padding: 1rem; }
+      .hero { padding: 2.5rem 0 2rem; }
+      .hero h1 { font-size: 1.9rem; }
+      .stats-bar { grid-template-columns: repeat(2, 1fr); }
+      .pipeline-grid { grid-template-columns: 1fr; }
+      .features-grid { grid-template-columns: 1fr; }
+      .card { padding: 1.5rem; }
+      .nav-links .nav-link:not(.nav-link-primary) { display: none; }
+    }
+    @media (max-width: 480px) {
+      .hero h1 { font-size: 1.5rem; }
+      .stats-bar { grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+      .stat-item { padding: 1rem; }
+      .hero-actions { flex-direction: column; }
+      .hero-actions .btn { width: 100%; justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <!-- Navigation -->
+    <nav class="fade-in">
+      <a href="#" class="nav-brand">
+        <span class="logo-icon">🎬</span>
+        Animation Factory
+      </a>
+      <div class="nav-links">
+        <a href="#how-it-works" class="nav-link">How It Works</a>
+        <a href="#features" class="nav-link">Features</a>
+        <a href="#setup" class="nav-link">Setup</a>
+        <a href="https://github.com/ShahAmar-Official/annimation.github.io" target="_blank" rel="noopener" class="nav-link nav-link-primary">★ GitHub</a>
+      </div>
+    </nav>
+
+    <!-- Hero -->
+    <header class="hero fade-in">
+      <div class="hero-badge">
+        <span class="pulse"></span>
+        100% Free — No Paid APIs
+      </div>
+      <h1>Create Viral<br><span class="gradient-text">Funny Animation</span> Shorts</h1>
+      <p class="hero-subtitle">
+        Automatically generate hilarious animated comedy YouTube Shorts that go viral.
+        Powered by AI comedy scripts, animated visuals, and professional voice acting — all 100% free.
+      </p>
+      <div class="hero-actions">
+        <a href="#setup" class="btn btn-primary">Get Started →</a>
+        <a href="#how-it-works" class="btn btn-outline">See How It Works</a>
+      </div>
+    </header>
+
+    <!-- Stats -->
+    <div class="stats-bar fade-in">
+      <div class="stat-item">
+        <div class="stat-value">$0</div>
+        <div class="stat-label">Cost Per Video</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value">24/7</div>
+        <div class="stat-label">Fully Automated</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value">6hr</div>
+        <div class="stat-label">Upload Frequency</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value">0</div>
+        <div class="stat-label">Paid APIs Needed</div>
+      </div>
+    </div>
+
+    <!-- How It Works -->
+    <div id="how-it-works" class="fade-in">
+      <div class="section-header">
+        <h2>🎬 How It Works</h2>
+        <p>Six automated steps — from comedy topic to viral animated Short</p>
+      </div>
+      <div class="pipeline-grid">
+        <div class="pipeline-step">
+          <div class="icon">🎭</div>
+          <strong>Find Comedy Gold</strong>
+          <div class="desc">Trending topics + comedy scoring</div>
+        </div>
+        <div class="pipeline-step">
+          <div class="icon">✍️</div>
+          <strong>Write Jokes</strong>
+          <div class="desc">AI comedy script engine</div>
+        </div>
+        <div class="pipeline-step">
+          <div class="icon">🎙️</div>
+          <strong>Voice Acting</strong>
+          <div class="desc">Expressive neural TTS</div>
+        </div>
+        <div class="pipeline-step">
+          <div class="icon">🎬</div>
+          <strong>Animate It</strong>
+          <div class="desc">Cartoon-style video assembly</div>
+        </div>
+        <div class="pipeline-step">
+          <div class="icon">🖼️</div>
+          <strong>Eye-Candy Thumbnail</strong>
+          <div class="desc">Viral comedy thumbnails</div>
+        </div>
+        <div class="pipeline-step">
+          <div class="icon">🚀</div>
+          <strong>Upload &amp; Go Viral</strong>
+          <div class="desc">Direct to YouTube</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <!-- Features -->
+    <div id="features" class="fade-in">
+      <div class="section-header">
+        <h2>✨ Features</h2>
+        <p>Everything you need for hands-free content creation</p>
+      </div>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">💸</div>
+          <h3>Completely Free</h3>
+          <p>No paid APIs. Uses Google TTS, template scripts, and free Pexels stock footage.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🤖</div>
+          <h3>Fully Automated</h3>
+          <p>Runs on GitHub Actions every 6 hours. No server or manual intervention needed.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">📈</div>
+          <h3>Trend-Powered</h3>
+          <p>Scores topics from Google Trends and Hacker News for maximum viral potential.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">📱</div>
+          <h3>Shorts-Optimized</h3>
+          <p>Vertical 1080×1920 video with captions, hooks, and CTAs built in.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🎨</div>
+          <h3>Custom Thumbnails</h3>
+          <p>Auto-generated gradient thumbnails with topic emojis and bold typography.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🔄</div>
+          <h3>Smart Retry Logic</h3>
+          <p>Built-in retry with exponential backoff for every external API call.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <!-- Cost comparison -->
+    <div class="card fade-in">
+      <h2>💰 Cost Breakdown</h2>
+      <p class="card-description">Every component is free — no credit card required.</p>
+      <table class="cost-table">
+        <thead>
+          <tr>
+            <th>Service</th>
+            <th>Purpose</th>
+            <th>Cost</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Template Engine</td>
+            <td>Script generation</td>
+            <td><span class="free-badge">Free</span></td>
+          </tr>
+          <tr>
+            <td>Google TTS (gTTS)</td>
+            <td>Voice narration</td>
+            <td><span class="free-badge">Free</span></td>
+          </tr>
+          <tr>
+            <td>Pexels API</td>
+            <td>Stock video footage</td>
+            <td><span class="free-badge">Free</span></td>
+          </tr>
+          <tr>
+            <td>Google Trends</td>
+            <td>Trending topics</td>
+            <td><span class="free-badge">Free</span></td>
+          </tr>
+          <tr>
+            <td>Hacker News</td>
+            <td>Trending topics</td>
+            <td><span class="free-badge">Free</span></td>
+          </tr>
+          <tr>
+            <td>GitHub Actions</td>
+            <td>Pipeline runner</td>
+            <td><span class="free-badge">Free</span></td>
+          </tr>
+          <tr>
+            <td><strong>Total per video</strong></td>
+            <td></td>
+            <td><strong>$0.00</strong></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <!-- Setup -->
+    <div id="setup" class="fade-in">
+      <div class="section-header">
+        <h2>🛠️ Quick Setup</h2>
+        <p>Four steps to fully automated Shorts</p>
+      </div>
+
+      <!-- Step 1: Channel Link -->
+      <div class="card" id="step1-card">
+        <h2><span class="step">1</span> Link Your YouTube Channel</h2>
+        <p class="card-description">Paste your channel URL to validate and connect.</p>
+        <div class="input-group">
+          <label for="channel-url">YouTube Channel URL</label>
+          <input
+            type="url"
+            id="channel-url"
+            placeholder="https://www.youtube.com/channel/UCxxxxxx or @handle"
+            autocomplete="off"
+          >
+          <p class="input-hint">
+            Accepts <code>youtube.com/channel/UC...</code>,
+            <code>youtube.com/@handle</code>, or
+            <code>youtube.com/c/ChannelName</code>
+          </p>
+        </div>
+        <button class="btn btn-primary" id="validate-btn" onclick="validateChannel()">
+          Validate Channel
+        </button>
+        <div class="channel-info" id="channel-info">
+          <span class="check-circle">✓</span>
+          <div>
+            <p><strong>Channel recognized</strong></p>
+            <p>Identifier: <span class="channel-id" id="channel-id-display"></span></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2: OAuth Authorization -->
+      <div class="card" id="step2-card">
+        <h2><span class="step">2</span> Authorize YouTube Access</h2>
+        <p class="card-description">Connect your Google account to allow uploads to your channel.</p>
+
+        <div class="input-group">
+          <label for="client-id">Google OAuth2 Client ID</label>
+          <input
+            type="text"
+            id="client-id"
+            placeholder="xxxx.apps.googleusercontent.com"
+            autocomplete="off"
+          >
+          <p class="input-hint">
+            From <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener">Google Cloud Console</a> →
+            OAuth 2.0 Client IDs. Create a <strong>Web application</strong> and add this page's URL as a redirect URI.
+          </p>
+        </div>
+
+        <button class="btn btn-primary" id="authorize-btn" onclick="startAuth()">
+          🔐 Authorize with Google
+        </button>
+
+        <div class="token-area" id="token-area">
+          <div class="token-box">
+            <label>Authorization Code</label>
+            <button class="copy-btn" onclick="copyText('auth-code-display')">Copy</button>
+            <pre id="auth-code-display"></pre>
+          </div>
+          <p style="font-size:0.85rem; color:var(--text-muted); margin-top:0.5rem;">
+            ✅ Code captured! Enter your Client Secret below to exchange for tokens.
+          </p>
+        </div>
+      </div>
+
+      <!-- Step 3: Token Exchange -->
+      <div class="card" id="step3-card">
+        <h2><span class="step">3</span> Exchange Tokens</h2>
+        <p class="card-description">Exchange your authorization code for access &amp; refresh tokens — right in the browser.</p>
+
+        <div class="input-group">
+          <label for="client-secret">Google OAuth2 Client Secret</label>
+          <input
+            type="password"
+            id="client-secret"
+            placeholder="Your client secret from Google Cloud Console"
+            autocomplete="off"
+          >
+          <p class="input-hint">
+            Found in <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener">Google Cloud Console</a> →
+            OAuth 2.0 Client IDs → Edit → Client secret. <strong>Never shared — stays in your browser only.</strong>
+          </p>
+        </div>
+
+        <button class="btn btn-primary" id="exchange-btn" onclick="exchangeToken()">
+          🔑 Exchange Code for Tokens
+        </button>
+
+        <div id="exchange-status" style="margin-top:0.75rem; display:none;">
+          <p id="exchange-status-text" style="font-size:0.9rem;"></p>
+        </div>
+
+        <div class="token-area" id="token-result-area">
+          <div class="token-box">
+            <label>YOUTUBE_TOKEN — Copy this entire JSON as a GitHub Secret</label>
+            <button class="copy-btn" onclick="copyText('token-result-display')">Copy</button>
+            <pre id="token-result-display"></pre>
+          </div>
+          <p style="font-size:0.85rem; color:var(--green); margin-top:0.5rem;">
+            ✅ Tokens received! Copy the JSON above and save it as the <code>YOUTUBE_TOKEN</code> GitHub Secret.
+          </p>
+        </div>
+
+        <details style="margin-top:1.25rem;">
+          <summary style="cursor:pointer; color:var(--text-secondary); font-size:0.9rem;">
+            ⚙️ Manual exchange (alternative)
+          </summary>
+          <div style="margin-top:0.75rem;">
+            <div class="token-box" style="position:relative;">
+              <label>Option A — Python helper</label>
+              <button class="copy-btn" onclick="copyText('exchange-cmd')">Copy</button>
+              <pre id="exchange-cmd">pip install google-auth-oauthlib
+python - &lt;&lt;'EOF'
+from google_auth_oauthlib.flow import InstalledAppFlow
+flow = InstalledAppFlow.from_client_secrets_file(
+    "client_secret.json",
+    scopes=["https://www.googleapis.com/auth/youtube.upload",
+            "https://www.googleapis.com/auth/youtube.force-ssl"]
+)
+creds = flow.run_local_server(port=0)
+import json
+print(json.dumps({
+    "access_token": creds.token,
+    "refresh_token": creds.refresh_token,
+    "token_uri": creds.token_uri,
+}))
+EOF</pre>
+            </div>
+            <div class="token-box" style="margin-top:0.5rem; position:relative;">
+              <label>Option B — Exchange via curl</label>
+              <button class="copy-btn" onclick="copyText('exchange-cmd-curl')">Copy</button>
+              <pre id="exchange-cmd-curl">curl -s -X POST https://oauth2.googleapis.com/token \
+  -d code=YOUR_AUTH_CODE \
+  -d client_id=YOUR_CLIENT_ID \
+  -d client_secret=YOUR_CLIENT_SECRET \
+  -d redirect_uri=YOUR_REDIRECT_URI \
+  -d grant_type=authorization_code</pre>
+            </div>
+          </div>
+        </details>
+      </div>
+
+      <!-- Step 4: Complete Setup -->
+      <div class="card" id="step4-card">
+        <h2><span class="step">4</span> Configure &amp; Launch</h2>
+        <p class="card-description">Add your secrets and enable the automation pipeline.</p>
+
+        <ol class="steps-list" id="setup-steps">
+          <li>
+            <strong>Get a Pexels API key</strong> — Sign up for free at
+            <a href="https://www.pexels.com/api/" target="_blank" rel="noopener">pexels.com/api</a>.
+          </li>
+          <li>
+            <strong>Add GitHub Secrets</strong> — In your fork go to
+            <em>Settings → Secrets and variables → Actions</em> and add:
+            <div class="token-box" style="margin-top:0.5rem">
+              <pre>YOUTUBE_CLIENT_SECRET  → Full OAuth2 client secret JSON
+YOUTUBE_TOKEN          → JSON with access_token &amp; refresh_token (from Step 3)
+PEXELS_API_KEY         → Your free Pexels API key</pre>
+            </div>
+          </li>
+          <li>
+            <strong>Enable GitHub Actions</strong> — Go to the <em>Actions</em> tab and enable workflows.
+            The pipeline runs every 6 hours automatically.
+          </li>
+        </ol>
+      </div>
+    </div>
+
+    <!-- Status Dashboard -->
+    <div class="card fade-in">
+      <h2>📊 Setup Status</h2>
+      <div class="status-row">
+        <span class="status" id="status-channel">
+          <span id="status-channel-icon">⏳</span> Channel: <span id="status-channel-text">Not set</span>
+        </span>
+        <span class="status" id="status-auth">
+          <span id="status-auth-icon">⏳</span> Auth: <span id="status-auth-text">Pending</span>
+        </span>
+        <span class="status" id="status-secrets">
+          <span id="status-secrets-icon">⏳</span> Secrets: <span id="status-secrets-text">Pending</span>
+        </span>
+      </div>
+
+      <div class="notice" id="setup-notice">
+        Complete the steps above to activate your automation pipeline.
+        Once secrets are configured, the workflow will create and upload Shorts every 6 hours.
+      </div>
+
+      <div class="hidden" id="all-done-notice" style="margin-top:1rem;">
+        <div class="notice notice-success">
+          <p><strong>🎉 Setup complete!</strong></p>
+          <p style="color:var(--text-secondary); font-size:0.88rem; margin-top:0.3rem;">
+            Your automation is ready. Go to the
+            <a href="#" id="actions-link" target="_blank" rel="noopener" style="color:var(--accent-light)">Actions tab</a>
+            to trigger the first run or wait for the next scheduled run.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+      <div class="footer-links">
+        <a href="https://github.com/ShahAmar-Official/annimation.github.io">GitHub</a>
+        <a href="https://github.com/ShahAmar-Official/annimation.github.io/issues">Issues</a>
+        <a href="https://github.com/ShahAmar-Official/annimation.github.io/blob/main/LICENSE">MIT License</a>
+      </div>
+      <p>Built with ❤️ by <a href="https://github.com/ShahAmar-Official">ShahAmar</a> — 100% free and open source</p>
+    </footer>
+
+  </div>
+
+  <!-- Toast notification -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ── State ──────────────────────────────────────────────────────
+    const state = {
+      channelId: null,
+      authorized: false,
+      authCode: null,
+    };
+
+    // ── Restore state from localStorage ───────────────────────────
+    (function restoreState() {
+      try {
+        const saved = localStorage.getItem('ytAutoState');
+        if (saved) {
+          const data = JSON.parse(saved);
+          if (data.channelId) {
+            state.channelId = data.channelId;
+            document.getElementById('channel-url').value = data.channelUrl || '';
+            showChannelInfo(data.channelId);
+          }
+          if (data.clientId) {
+            document.getElementById('client-id').value = data.clientId;
+          }
+          if (data.authorized) {
+            state.authorized = true;
+            updateStatus('auth', 'done', 'Authorized');
+          }
+          if (data.authCode) {
+            state.authCode = data.authCode;
+            document.getElementById('auth-code-display').textContent = data.authCode;
+            document.getElementById('token-area').classList.add('visible');
+          }
+        }
+      } catch (_) { /* ignore */ }
+
+      // Check for OAuth callback code in URL
+      handleOAuthCallback();
+    })();
+
+    // ── Channel validation ────────────────────────────────────────
+    function validateChannel() {
+      const urlInput = document.getElementById('channel-url');
+      const raw = urlInput.value.trim();
+
+      if (!raw) {
+        showToast('⚠️ Please enter a YouTube channel URL.');
+        return;
+      }
+
+      const parsed = parseChannelUrl(raw);
+      if (!parsed) {
+        showToast('❌ Invalid URL. Use youtube.com/channel/UC… or @handle');
+        return;
+      }
+
+      state.channelId = parsed;
+      showChannelInfo(parsed);
+      saveState({ channelUrl: raw });
+      showToast('✅ Channel validated successfully!');
+    }
+
+    function parseChannelUrl(url) {
+      let u = url;
+      if (!u.startsWith('http')) {
+        u = 'https://' + u;
+      }
+
+      try {
+        const parsed = new URL(u);
+        const host = parsed.hostname.replace('www.', '');
+        if (host !== 'youtube.com' && host !== 'm.youtube.com') {
+          return null;
+        }
+        const path = parsed.pathname;
+
+        const channelMatch = path.match(/^\/channel\/(UC[a-zA-Z0-9_-]+)/);
+        if (channelMatch) return channelMatch[1];
+
+        const handleMatch = path.match(/^\/@([a-zA-Z0-9._-]+)/);
+        if (handleMatch) return '@' + handleMatch[1];
+
+        const customMatch = path.match(/^\/(c|user)\/([a-zA-Z0-9._-]+)/);
+        if (customMatch) return customMatch[2];
+
+        return null;
+      } catch (_) {
+        return null;
+      }
+    }
+
+    function showChannelInfo(id) {
+      const info = document.getElementById('channel-info');
+      document.getElementById('channel-id-display').textContent = id;
+      info.classList.add('visible');
+      updateStatus('channel', 'done', id);
+    }
+
+    // ── OAuth2 Authorization ──────────────────────────────────────
+    function startAuth() {
+      const clientId = document.getElementById('client-id').value.trim();
+
+      if (!clientId) {
+        showToast('⚠️ Enter your OAuth2 Client ID first.');
+        return;
+      }
+
+      saveState({ clientId: clientId });
+
+      const redirectUri = window.location.origin + window.location.pathname;
+      const scope = 'https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube.force-ssl';
+
+      const params = new URLSearchParams({
+        client_id: clientId,
+        redirect_uri: redirectUri,
+        response_type: 'code',
+        scope: scope,
+        access_type: 'offline',
+        prompt: 'consent',
+        state: 'annimation'
+      });
+
+      const authUrl = 'https://accounts.google.com/o/oauth2/v2/auth?' + params.toString();
+      window.location.href = authUrl;
+    }
+
+    function handleOAuthCallback() {
+      const params = new URLSearchParams(window.location.search);
+      const code = params.get('code');
+      const oauthState = params.get('state');
+
+      if (code && oauthState === 'annimation') {
+        document.getElementById('auth-code-display').textContent = code;
+        document.getElementById('token-area').classList.add('visible');
+
+        state.authorized = true;
+        state.authCode = code;
+        updateStatus('auth', 'done', 'Authorized');
+        saveState({ authorized: true, authCode: code });
+
+        const cleanUrl = window.location.origin + window.location.pathname;
+        window.history.replaceState({}, document.title, cleanUrl);
+        showToast('✅ Authorization successful! Now exchange the code for tokens in Step 3.');
+      }
+    }
+
+    // ── Token Exchange ────────────────────────────────────────────
+    const TOKEN_URI = 'https://oauth2.googleapis.com/token';
+
+    async function exchangeToken() {
+      const authCode = state.authCode || document.getElementById('auth-code-display').textContent.trim();
+      const saved = loadSavedState();
+      const clientId = document.getElementById('client-id').value.trim() || saved.clientId;
+      const clientSecret = document.getElementById('client-secret').value.trim();
+      const redirectUri = window.location.origin + window.location.pathname;
+
+      if (!authCode) {
+        showToast('⚠️ No authorization code found. Complete Step 2 first.');
+        return;
+      }
+      if (!clientId) {
+        showToast('⚠️ Client ID is missing. Enter it in Step 2.');
+        return;
+      }
+      if (!clientSecret) {
+        showToast('⚠️ Enter your Client Secret to exchange the code.');
+        return;
+      }
+
+      const btn = document.getElementById('exchange-btn');
+      const statusEl = document.getElementById('exchange-status');
+      const statusText = document.getElementById('exchange-status-text');
+
+      btn.disabled = true;
+      btn.textContent = '⏳ Exchanging…';
+      statusEl.style.display = 'block';
+      statusText.style.color = 'var(--text-secondary)';
+      statusText.textContent = 'Contacting Google OAuth2 server…';
+
+      try {
+        const body = new URLSearchParams({
+          code: authCode,
+          client_id: clientId,
+          client_secret: clientSecret,
+          redirect_uri: redirectUri,
+          grant_type: 'authorization_code'
+        });
+
+        const resp = await fetch(TOKEN_URI, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: body.toString()
+        });
+
+        const data = await resp.json();
+
+        if (!resp.ok) {
+          const errMsg = data.error_description || data.error || 'Unknown error';
+          statusText.style.color = 'var(--red)';
+          statusText.textContent = '❌ Exchange failed (' + resp.status + '): ' + errMsg;
+          showToast('❌ Token exchange failed. Check your credentials.');
+          return;
+        }
+
+        if (!data.access_token || !data.refresh_token) {
+          statusText.style.color = 'var(--red)';
+          statusText.textContent = '❌ Response missing access_token or refresh_token. Ensure access_type=offline and prompt=consent were used.';
+          showToast('❌ Incomplete token response. Try re-authorizing in Step 2.');
+          return;
+        }
+
+        const tokenJson = JSON.stringify({
+          access_token: data.access_token,
+          refresh_token: data.refresh_token,
+          token_uri: TOKEN_URI
+        }, null, 2);
+
+        document.getElementById('token-result-display').textContent = tokenJson;
+        document.getElementById('token-result-area').classList.add('visible');
+
+        statusText.style.color = 'var(--green)';
+        statusText.textContent = '✅ Tokens received successfully!';
+        updateStatus('secrets', 'done', 'Token ready');
+        showToast('🎉 Token exchange successful! Copy the JSON and add it as a GitHub Secret.');
+      } catch (err) {
+        statusText.style.color = 'var(--red)';
+        statusText.textContent = '❌ Network error: ' + err.message;
+        showToast('❌ Could not reach Google servers. Try the manual method below.');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '🔑 Exchange Code for Tokens';
+      }
+    }
+
+    function loadSavedState() {
+      try {
+        return JSON.parse(localStorage.getItem('ytAutoState') || '{}');
+      } catch (_) { return {}; }
+    }
+
+    // ── Status updates ────────────────────────────────────────────
+    function updateStatus(key, status, text) {
+      const el = document.getElementById('status-' + key);
+      const icon = document.getElementById('status-' + key + '-icon');
+      const textEl = document.getElementById('status-' + key + '-text');
+
+      el.className = 'status ' + (status === 'done' ? 'status-done' : 'status-pending');
+      icon.textContent = status === 'done' ? '✅' : '⏳';
+      textEl.textContent = text;
+    }
+
+    // ── Persistence ───────────────────────────────────────────────
+    function saveState(extra) {
+      try {
+        const current = JSON.parse(localStorage.getItem('ytAutoState') || '{}');
+        const merged = { ...current, ...extra, channelId: state.channelId, authorized: state.authorized };
+        localStorage.setItem('ytAutoState', JSON.stringify(merged));
+      } catch (_) { /* ignore */ }
+    }
+
+    // ── Clipboard ─────────────────────────────────────────────────
+    function copyText(elementId) {
+      const el = document.getElementById(elementId);
+      const text = el.textContent;
+      navigator.clipboard.writeText(text).then(function() {
+        const btn = el.closest('.token-box').querySelector('.copy-btn');
+        const original = btn.textContent;
+        btn.textContent = '✓ Copied';
+        btn.style.color = 'var(--green)';
+        setTimeout(function() {
+          btn.textContent = original;
+          btn.style.color = '';
+        }, 2000);
+        showToast('📋 Copied to clipboard!');
+      }).catch(function() {
+        try {
+          const range = document.createRange();
+          range.selectNode(el);
+          window.getSelection().removeAllRanges();
+          window.getSelection().addRange(range);
+          document.execCommand('copy');
+          window.getSelection().removeAllRanges();
+          showToast('📋 Copied to clipboard!');
+        } catch (_) {
+          showToast('❌ Copy failed — please select manually.');
+        }
+      });
+    }
+
+    // ── Toast notifications ───────────────────────────────────────
+    let toastTimeout;
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.classList.add('visible');
+      clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(function() {
+        toast.classList.remove('visible');
+      }, 3000);
+    }
+
+    // ── Smooth scroll for anchor links ────────────────────────────
+    document.querySelectorAll('a[href^="#"]').forEach(function(anchor) {
+      anchor.addEventListener('click', function(e) {
+        const href = this.getAttribute('href');
+        if (href === '#') return;
+        e.preventDefault();
+        const target = document.querySelector(href);
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
+    });
+
+    // ── Intersection observer for scroll animations ───────────────
+    if ('IntersectionObserver' in window) {
+      const observer = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+          if (entry.isIntersecting) {
+            entry.target.style.animationPlayState = 'running';
+            observer.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.1 });
+
+      document.querySelectorAll('.fade-in').forEach(function(el) {
+        el.style.animationPlayState = 'paused';
+        observer.observe(el);
+      });
+    }
+  </script>
+</body>
+</html>
