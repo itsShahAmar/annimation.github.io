@@ -106,18 +106,23 @@ class TestGetMusicForScenes(unittest.TestCase):
             result = self.ms.get_music_for_scenes(["intro scene"], "pasta")
         self.assertIsNone(result)
 
-    def test_returns_none_without_freesound_api_key(self):
-        """With no API key and empty cache, music selection returns None gracefully."""
+    def test_returns_silence_fallback_without_freesound_api_key(self):
+        """With no API key and empty cache, a silence fallback path is returned."""
+        fake_silence_path = Path("/tmp/cache/testkey_silence.wav")
         with patch.object(self.ms.config, "MUSIC_ENABLED", True), \
              patch.object(self.ms.config, "FREESOUND_API_KEY", None), \
              patch.object(self.ms.config, "MUSIC_CACHE_DIR", "/tmp/test_music_cache_empty"), \
+             patch("src.music_selector._create_silence_fallback",
+                   return_value=fake_silence_path) as mock_silence, \
              patch("src.music_selector.Path") as mock_path_cls:
             mock_dir = MagicMock()
             mock_dir.glob.return_value = []
             mock_dir.mkdir.return_value = None
             mock_path_cls.return_value = mock_dir
             result = self.ms.get_music_for_scenes(["intro scene"], "pasta")
-        self.assertIsNone(result)
+        mock_silence.assert_called_once()
+        self.assertEqual(result, fake_silence_path)
+        self.assertTrue(str(result).endswith("_silence.wav"))
 
     def test_returns_cached_file_when_available(self):
         """If a matching file is already in the cache, it is returned immediately."""
@@ -174,6 +179,20 @@ class TestGetMusicForScenes(unittest.TestCase):
             mock_dir.mkdir.return_value = None
             mock_path_cls.return_value = mock_dir
             result = self.ms.get_music_for_scenes([], "")
+        self.assertIsNotNone(result)
+
+    def test_returns_none_when_all_music_sources_fail(self):
+        """When Freesound is unavailable and silence fallback also fails, returns None."""
+        with patch.object(self.ms.config, "MUSIC_ENABLED", True), \
+             patch.object(self.ms.config, "FREESOUND_API_KEY", None), \
+             patch.object(self.ms.config, "MUSIC_CACHE_DIR", "/tmp/test_music_cache_empty"), \
+             patch("src.music_selector._create_silence_fallback", return_value=None), \
+             patch("src.music_selector.Path") as mock_path_cls:
+            mock_dir = MagicMock()
+            mock_dir.glob.return_value = []
+            mock_dir.mkdir.return_value = None
+            mock_path_cls.return_value = mock_dir
+            result = self.ms.get_music_for_scenes(["intro scene"], "pasta")
         self.assertIsNone(result)
 
 
@@ -254,6 +273,58 @@ class TestDownloadFromFreesound(unittest.TestCase):
                 "happy cooking", cache_dir, "cachekey"
             )
         self.assertIsNotNone(result)
+
+
+class TestCreateSilenceFallback(unittest.TestCase):
+    """Tests for music_selector._create_silence_fallback()."""
+
+    def setUp(self):
+        import src.music_selector as ms
+        self.ms = ms
+
+    def test_creates_wav_file_in_cache_dir(self):
+        """A WAV silence file is created in the provided cache directory."""
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmpdir:
+            cache_dir = Path(tmpdir)
+            result = self.ms._create_silence_fallback(cache_dir, "testkey")
+        self.assertIsNotNone(result)
+        self.assertTrue(str(result).endswith(".wav"))
+
+    def test_reuses_existing_silence_file(self):
+        """If a silence file already exists it is returned without re-writing."""
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmpdir:
+            cache_dir = Path(tmpdir)
+            first = self.ms._create_silence_fallback(cache_dir, "reusekey")
+            self.assertIsNotNone(first)
+            mtime_before = first.stat().st_mtime
+            second = self.ms._create_silence_fallback(cache_dir, "reusekey")
+            self.assertEqual(first, second)
+            self.assertEqual(mtime_before, second.stat().st_mtime)
+
+    def test_returns_none_on_write_failure(self):
+        """Returns None gracefully when the WAV file cannot be written."""
+        mock_dir = MagicMock(spec=Path)
+        fake_path = MagicMock(spec=Path)
+        fake_path.exists.return_value = False
+        mock_dir.__truediv__ = MagicMock(return_value=fake_path)
+        with patch("src.music_selector.wave.open", side_effect=OSError("disk full")):
+            result = self.ms._create_silence_fallback(mock_dir, "failkey")
+        self.assertIsNone(result)
+
+    def test_silence_file_is_valid_wav(self):
+        """The generated file is a valid WAV that Python's wave module can read."""
+        import tempfile
+        import wave as _wave
+        with tempfile.TemporaryDirectory() as tmpdir:
+            cache_dir = Path(tmpdir)
+            result = self.ms._create_silence_fallback(cache_dir, "validwav")
+            self.assertIsNotNone(result)
+            with _wave.open(str(result), "r") as wf:
+                self.assertEqual(wf.getnchannels(), 1)
+                self.assertEqual(wf.getsampwidth(), 2)
+                self.assertGreater(wf.getnframes(), 0)
 
 
 if __name__ == "__main__":

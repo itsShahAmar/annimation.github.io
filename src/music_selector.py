@@ -5,7 +5,8 @@ Classifies scenes by type (intro / middle / punchline) and downloads royalty-fre
 background music from free sources:
 
   1. Freesound API  — requires ``FREESOUND_API_KEY`` (free registration at freesound.org/apiv2/apply/).
-  2. Silence fallback — returns ``None`` so the pipeline continues without music.
+  2. Local silence fallback — generates a short silent WAV file so the pipeline always
+     has an audio track without requiring any API key or network access.
 
 Downloaded tracks are cached locally under ``MUSIC_CACHE_DIR`` to avoid redundant
 API calls across pipeline runs.
@@ -13,6 +14,7 @@ API calls across pipeline runs.
 
 import hashlib
 import logging
+import wave
 from pathlib import Path
 
 import requests
@@ -134,6 +136,13 @@ def get_music_for_scenes(scenes: list[str], topic: str) -> Path | None:
     if music_path:
         return music_path
 
+    # Fall back to a locally generated silent audio track so the pipeline
+    # always has a music path and never drops to TTS-only mode.
+    silence_path = _create_silence_fallback(cache_dir, cache_key)
+    if silence_path:
+        logger.info("Using silence fallback — no API music available")
+        return silence_path
+
     logger.warning("No background music sourced — video will use TTS narration only")
     return None
 
@@ -211,3 +220,44 @@ def _download_from_freesound(query: str, cache_dir: Path, cache_key: str) -> Pat
         logger.warning("Freesound search failed for query '%s': %s", query, exc)
 
     return None
+
+
+def _create_silence_fallback(cache_dir: Path, cache_key: str) -> Path | None:
+    """Generate a short silent WAV file as a last-resort music fallback.
+
+    Uses only Python's standard-library ``wave`` module — no external
+    dependencies or network access required.  Produces a 60-second mono
+    16-bit PCM WAV at 22 050 Hz (≈ 2.6 MB) which is long enough for any
+    YouTube Short.  The file is reused on subsequent pipeline runs.
+
+    Args:
+        cache_dir: Directory where the silence file will be written.
+        cache_key: Short hash used as part of the cached filename.
+
+    Returns:
+        Path to the generated WAV file, or ``None`` if writing fails.
+    """
+    out_path = cache_dir / f"{cache_key}_silence.wav"
+    if out_path.exists():
+        logger.debug("Reusing existing silence fallback: %s", out_path)
+        return out_path
+
+    sample_rate = 22050   # Hz — low sample rate keeps the file small
+    num_channels = 1      # mono
+    sample_width = 2      # 16-bit PCM
+    duration_s = 60       # seconds
+
+    try:
+        # Write one second of silence at a time to avoid a large in-memory allocation
+        silence_chunk = b"\x00" * sample_rate * num_channels * sample_width
+        with wave.open(str(out_path), "w") as wf:
+            wf.setnchannels(num_channels)
+            wf.setsampwidth(sample_width)
+            wf.setframerate(sample_rate)
+            for _ in range(duration_s):
+                wf.writeframes(silence_chunk)
+        logger.info("Created silence fallback audio (%ds WAV): %s", duration_s, out_path)
+        return out_path
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Could not create silence fallback audio: %s", exc)
+        return None
