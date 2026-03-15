@@ -2,7 +2,7 @@ name: Funny Animation Shorts Factory
 
 on:
   schedule:
-    - cron: '0 */12 * * *' 
+    - cron: '0 */06 * * *' 
   workflow_dispatch:  # Allow manual trigger
 
 permissions:
