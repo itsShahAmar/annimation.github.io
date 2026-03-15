@@ -573,6 +573,7 @@ def create_video(
     scenes: list[str],
     audio_duration: float,
     hook_text: str = "",
+    music_path: Path | None = None,
 ) -> Path:
     """Create a vertical 1080 × 1920 YouTube Shorts MP4 food making video.
 
@@ -588,6 +589,10 @@ def create_video(
                         search queries for Pexels, Pixabay, and Unsplash).
         audio_duration: Duration in seconds of the TTS audio.
         hook_text:      Kept for API compatibility.
+        music_path:     Optional path to a background music MP3 supplied by
+                        the pipeline (e.g. downloaded via music_selector).
+                        When ``None``, falls back to the static
+                        ``BG_MUSIC_PATH`` from config if it exists.
 
     Returns:
         Path to the exported MP4 file.
@@ -698,15 +703,18 @@ def create_video(
         # ------------------------------------------------------------------
         tts_audio = AudioFileClip(str(audio_path))
 
-        bg_music_path = Path(config.BG_MUSIC_PATH)
-        if bg_music_path.exists() and config.BG_MUSIC_VOLUME > 0:
+        # Prefer dynamically-supplied music_path; fall back to static BG_MUSIC_PATH
+        effective_music_path = music_path if music_path is not None else Path(config.BG_MUSIC_PATH)
+
+        if effective_music_path.exists() and config.BG_MUSIC_VOLUME > 0:
             try:
+                fade_dur = getattr(config, "MUSIC_FADE_DURATION", 1.0)
                 bg_audio = (
-                    AudioFileClip(str(bg_music_path))
+                    AudioFileClip(str(effective_music_path))
                     .volumex(config.BG_MUSIC_VOLUME)
                     .set_duration(target_duration)
                 )
-                bg_audio = bg_audio.audio_fadein(1.0).audio_fadeout(2.0)
+                bg_audio = bg_audio.audio_fadein(fade_dur).audio_fadeout(fade_dur * 2)
                 mixed_audio = CompositeAudioClip([bg_audio, tts_audio])
                 base = base.set_audio(mixed_audio)
                 logger.info("Background music mixed in at volume %.2f", config.BG_MUSIC_VOLUME)

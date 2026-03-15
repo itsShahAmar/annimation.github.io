@@ -97,13 +97,25 @@ def run_pipeline() -> None:
         logger.info("      Audio duration: %.2f s", audio_duration)
 
         # ------------------------------------------------------------------
+        # Step 3.5: Select scene-aware background music (free sources)
+        # ------------------------------------------------------------------
+        logger.info("[3.5/6] \U0001f3b5 Music — selecting scene-aware background music…")
+        from src.music_selector import get_music_for_scenes  # noqa: PLC0415
+
+        music_path = get_music_for_scenes(scenes, topic)
+        if music_path:
+            logger.info("      Background music: '%s'", music_path)
+        else:
+            logger.info("      No background music available — using TTS narration only")
+
+        # ------------------------------------------------------------------
         # Step 4: Create food-style video
         # ------------------------------------------------------------------
         logger.info("[4/6] \U0001f3ac Assembling — creating food video with stock footage…")
         from src.video_creator import create_video  # noqa: PLC0415
 
         video_path = create_video(audio_path, script_text, scenes, audio_duration,
-                                  hook_text=hook_text)
+                                  hook_text=hook_text, music_path=music_path)
         logger.info("      Video path: '%s'", video_path)
 
         # ------------------------------------------------------------------

@@ -1,0 +1,260 @@
+"""
+tests/test_music_selector.py — Unit tests for src/music_selector.py
+
+Tests scene classification, mood mapping, and music selection logic without
+making any real API calls.
+
+Run with: python -m pytest tests/ -v
+"""
+
+import sys
+import unittest
+from pathlib import Path
+from unittest.mock import MagicMock, patch
+
+# Stub heavy optional imports not needed for music_selector tests
+for _mod in (
+    "edge_tts",
+    "moviepy", "moviepy.editor",
+    "PIL", "PIL.Image", "PIL.ImageDraw", "PIL.ImageFont",
+    "pydub",
+    "mutagen", "mutagen.mp3",
+    "googleapiclient", "googleapiclient.discovery",
+    "httpx",
+):
+    sys.modules.setdefault(_mod, MagicMock())
+
+
+class TestClassifySceneType(unittest.TestCase):
+    """Tests for music_selector.classify_scene_type()."""
+
+    def setUp(self):
+        from src.music_selector import classify_scene_type
+        self.classify = classify_scene_type
+
+    def test_first_scene_is_intro(self):
+        self.assertEqual(self.classify(0, 4), "intro")
+
+    def test_last_scene_is_punchline(self):
+        self.assertEqual(self.classify(3, 4), "punchline")
+
+    def test_middle_scenes_are_middle(self):
+        self.assertEqual(self.classify(1, 4), "middle")
+        self.assertEqual(self.classify(2, 4), "middle")
+
+    def test_single_scene_is_middle(self):
+        self.assertEqual(self.classify(0, 1), "middle")
+
+    def test_zero_scenes_is_middle(self):
+        self.assertEqual(self.classify(0, 0), "middle")
+
+    def test_two_scenes_intro_and_punchline(self):
+        self.assertEqual(self.classify(0, 2), "intro")
+        self.assertEqual(self.classify(1, 2), "punchline")
+
+    def test_three_scenes_intro_middle_punchline(self):
+        self.assertEqual(self.classify(0, 3), "intro")
+        self.assertEqual(self.classify(1, 3), "middle")
+        self.assertEqual(self.classify(2, 3), "punchline")
+
+
+class TestGetMoodForScene(unittest.TestCase):
+    """Tests for music_selector.get_mood_for_scene()."""
+
+    def setUp(self):
+        from src.music_selector import get_mood_for_scene
+        self.get_mood = get_mood_for_scene
+
+    def test_intro_returns_non_empty_string(self):
+        mood = self.get_mood("intro")
+        self.assertIsInstance(mood, str)
+        self.assertTrue(mood.strip(), "mood query must not be blank")
+
+    def test_middle_returns_non_empty_string(self):
+        mood = self.get_mood("middle")
+        self.assertIsInstance(mood, str)
+        self.assertTrue(mood.strip())
+
+    def test_punchline_returns_non_empty_string(self):
+        mood = self.get_mood("punchline")
+        self.assertIsInstance(mood, str)
+        self.assertTrue(mood.strip())
+
+    def test_unknown_scene_type_falls_back_to_middle_moods(self):
+        """An unrecognised scene type should not raise; it falls back to 'middle'."""
+        mood = self.get_mood("unknown_scene_xyz")
+        self.assertIsInstance(mood, str)
+        self.assertTrue(mood.strip())
+
+    def test_all_scene_types_contain_descriptive_keywords(self):
+        """Each mood query should be descriptive enough to use as a search term."""
+        for scene_type in ("intro", "middle", "punchline"):
+            mood = self.get_mood(scene_type)
+            self.assertGreater(len(mood.split()), 1,
+                               f"mood for '{scene_type}' should be multi-word: '{mood}'")
+
+
+class TestGetMusicForScenes(unittest.TestCase):
+    """Tests for music_selector.get_music_for_scenes()."""
+
+    def setUp(self):
+        import src.music_selector as ms
+        self.ms = ms
+
+    def test_returns_none_when_music_disabled(self):
+        with patch.object(self.ms.config, "MUSIC_ENABLED", False):
+            result = self.ms.get_music_for_scenes(["intro scene"], "pasta")
+        self.assertIsNone(result)
+
+    def test_returns_none_without_freesound_api_key(self):
+        """With no API key and empty cache, music selection returns None gracefully."""
+        with patch.object(self.ms.config, "MUSIC_ENABLED", True), \
+             patch.object(self.ms.config, "FREESOUND_API_KEY", None), \
+             patch.object(self.ms.config, "MUSIC_CACHE_DIR", "/tmp/test_music_cache_empty"), \
+             patch("src.music_selector.Path") as mock_path_cls:
+            mock_dir = MagicMock()
+            mock_dir.glob.return_value = []
+            mock_dir.mkdir.return_value = None
+            mock_path_cls.return_value = mock_dir
+            result = self.ms.get_music_for_scenes(["intro scene"], "pasta")
+        self.assertIsNone(result)
+
+    def test_returns_cached_file_when_available(self):
+        """If a matching file is already in the cache, it is returned immediately."""
+        fake_cached_path = Path("/tmp/cache/abc123_456.mp3")
+        with patch.object(self.ms.config, "MUSIC_ENABLED", True), \
+             patch.object(self.ms.config, "MUSIC_CACHE_DIR", "/tmp/test_music_cache"), \
+             patch("src.music_selector.Path") as mock_path_cls:
+            mock_dir = MagicMock()
+            mock_dir.glob.return_value = [fake_cached_path]
+            mock_dir.mkdir.return_value = None
+            mock_path_cls.return_value = mock_dir
+            result = self.ms.get_music_for_scenes(["cooking scene"], "chicken tikka")
+        self.assertEqual(result, fake_cached_path)
+
+    def test_calls_freesound_download_when_api_key_set(self):
+        """When FREESOUND_API_KEY is present and cache is empty, Freesound is queried."""
+        with patch.object(self.ms.config, "MUSIC_ENABLED", True), \
+             patch.object(self.ms.config, "FREESOUND_API_KEY", "test_key"), \
+             patch.object(self.ms.config, "MUSIC_CACHE_DIR", "/tmp/test_music_cache"), \
+             patch("src.music_selector._download_from_freesound",
+                   return_value=None) as mock_dl, \
+             patch("src.music_selector.Path") as mock_path_cls:
+            mock_dir = MagicMock()
+            mock_dir.glob.return_value = []
+            mock_dir.mkdir.return_value = None
+            mock_path_cls.return_value = mock_dir
+            self.ms.get_music_for_scenes(["baking scene"], "pizza")
+        mock_dl.assert_called_once()
+
+    def test_returns_downloaded_path_from_freesound(self):
+        """If Freesound download succeeds, the returned path is passed through."""
+        fake_music_path = Path("/tmp/cache/xyz_789.mp3")
+        with patch.object(self.ms.config, "MUSIC_ENABLED", True), \
+             patch.object(self.ms.config, "FREESOUND_API_KEY", "test_key"), \
+             patch.object(self.ms.config, "MUSIC_CACHE_DIR", "/tmp/test_music_cache"), \
+             patch("src.music_selector._download_from_freesound",
+                   return_value=fake_music_path), \
+             patch("src.music_selector.Path") as mock_path_cls:
+            mock_dir = MagicMock()
+            mock_dir.glob.return_value = []
+            mock_dir.mkdir.return_value = None
+            mock_path_cls.return_value = mock_dir
+            result = self.ms.get_music_for_scenes(["stir fry scene"], "noodles")
+        self.assertEqual(result, fake_music_path)
+
+    def test_handles_empty_scenes_list(self):
+        """An empty scene list should not raise an exception."""
+        with patch.object(self.ms.config, "MUSIC_ENABLED", True), \
+             patch.object(self.ms.config, "FREESOUND_API_KEY", None), \
+             patch.object(self.ms.config, "MUSIC_CACHE_DIR", "/tmp/test_music_cache"), \
+             patch("src.music_selector.Path") as mock_path_cls:
+            mock_dir = MagicMock()
+            mock_dir.glob.return_value = []
+            mock_dir.mkdir.return_value = None
+            mock_path_cls.return_value = mock_dir
+            result = self.ms.get_music_for_scenes([], "")
+        self.assertIsNone(result)
+
+
+class TestDownloadFromFreesound(unittest.TestCase):
+    """Tests for music_selector._download_from_freesound()."""
+
+    def setUp(self):
+        import src.music_selector as ms
+        self.ms = ms
+
+    def test_returns_none_without_api_key(self):
+        with patch.object(self.ms.config, "FREESOUND_API_KEY", None):
+            result = self.ms._download_from_freesound(
+                "test query", Path("/tmp"), "cachekey"
+            )
+        self.assertIsNone(result)
+
+    def test_returns_none_on_api_error(self):
+        with patch.object(self.ms.config, "FREESOUND_API_KEY", "test_key"), \
+             patch("src.music_selector.requests.get",
+                   side_effect=Exception("network error")):
+            result = self.ms._download_from_freesound(
+                "test query", Path("/tmp"), "cachekey"
+            )
+        self.assertIsNone(result)
+
+    def test_returns_none_when_no_results(self):
+        mock_resp = MagicMock()
+        mock_resp.json.return_value = {"results": []}
+        mock_resp.raise_for_status.return_value = None
+        with patch.object(self.ms.config, "FREESOUND_API_KEY", "test_key"), \
+             patch("src.music_selector.requests.get", return_value=mock_resp):
+            result = self.ms._download_from_freesound(
+                "test query", Path("/tmp"), "cachekey"
+            )
+        self.assertIsNone(result)
+
+    def test_returns_none_when_no_preview_url(self):
+        mock_resp = MagicMock()
+        mock_resp.json.return_value = {
+            "results": [{"id": 1, "name": "test", "previews": {}}]
+        }
+        mock_resp.raise_for_status.return_value = None
+        with patch.object(self.ms.config, "FREESOUND_API_KEY", "test_key"), \
+             patch("src.music_selector.requests.get", return_value=mock_resp):
+            result = self.ms._download_from_freesound(
+                "test query", Path("/tmp"), "cachekey"
+            )
+        self.assertIsNone(result)
+
+    def test_downloads_preview_and_returns_path(self):
+        """When results include a preview URL, the file is downloaded."""
+        search_resp = MagicMock()
+        search_resp.raise_for_status.return_value = None
+        search_resp.json.return_value = {
+            "results": [{
+                "id": 42,
+                "name": "Happy Cooking Loop",
+                "previews": {"preview-hq-mp3": "https://cdn.freesound.org/42.mp3"},
+            }]
+        }
+
+        download_resp = MagicMock()
+        download_resp.raise_for_status.return_value = None
+        download_resp.iter_content.return_value = [b"fake_mp3_data"]
+        download_resp.__enter__ = MagicMock(return_value=download_resp)
+        download_resp.__exit__ = MagicMock(return_value=False)
+
+        with patch.object(self.ms.config, "FREESOUND_API_KEY", "test_key"), \
+             patch("src.music_selector.requests.get",
+                   side_effect=[search_resp, download_resp]), \
+             patch("builtins.open", unittest.mock.mock_open()) as mock_file:
+            cache_dir = MagicMock(spec=Path)
+            cache_dir.__truediv__ = MagicMock(
+                return_value=Path("/tmp/cachekey_42.mp3")
+            )
+            result = self.ms._download_from_freesound(
+                "happy cooking", cache_dir, "cachekey"
+            )
+        self.assertIsNotNone(result)
+
+
+if __name__ == "__main__":
+    unittest.main()

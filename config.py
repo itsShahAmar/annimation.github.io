@@ -22,6 +22,15 @@ BG_MUSIC_VOLUME: float = 0.08
 BG_MUSIC_PATH: str = "assets/bg_music.mp3"  # Relative path to background music file (leave empty to disable)
 
 # ---------------------------------------------------------------------------
+# Background music settings — scene-aware music selection and mixing
+# ---------------------------------------------------------------------------
+MUSIC_ENABLED: bool = True                   # Set False to disable background music entirely
+MUSIC_VOLUME: float = BG_MUSIC_VOLUME        # Background music volume (0.0–1.0 relative to narration)
+MUSIC_FADE_DURATION: float = 1.0             # Fade-in and fade-out duration in seconds
+MUSIC_CACHE_DIR: str = "cache/music"         # Local cache directory for downloaded tracks
+FREESOUND_API_KEY: str | None = os.getenv("FREESOUND_API_KEY")  # Freesound.org API key (free registration)
+
+# ---------------------------------------------------------------------------
 # Food content style settings
 # ---------------------------------------------------------------------------
 CONTENT_STYLE: str = "food making"               # content focus
