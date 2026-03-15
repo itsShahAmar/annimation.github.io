@@ -174,11 +174,36 @@ async def _generate_edge_tts(text: str, output_path: str, voice: str, rate: str)
     await communicate.save(output_path)
 
 
+def _generate_gtts(text: str, output_path: str) -> None:
+    """Generate speech using gTTS (Google TTS) as a fallback engine.
+
+    Uses Google's free TTS API which works reliably in CI/GitHub Actions
+    environments when edge-tts cannot reach the Microsoft TTS service.
+
+    Args:
+        text: Plain text to synthesise.
+        output_path: Destination MP3 file path.
+
+    Raises:
+        RuntimeError: If gTTS is not installed or the API call fails.
+    """
+    try:
+        from gtts import gTTS  # type: ignore[import]
+    except ImportError as exc:
+        raise RuntimeError("gtts not installed — run: pip install gtts") from exc
+
+    tts = gTTS(text=text, lang="en", slow=False)
+    tts.save(output_path)
+
+
 def generate_speech(script_text: str) -> tuple[Path, float]:
     """Generate TTS audio for *script_text* using a professional female food narrator voice.
 
-    Uses Microsoft Edge's free neural TTS (edge-tts) with female-only voices
-    for consistent, professional food content narration.
+    Tries Microsoft Edge neural TTS (edge-tts) first with up to three different
+    voices so that a transient ``NoAudioReceived`` error from one voice does not
+    abort the pipeline.  Falls back to Google TTS (gTTS) when all edge-tts
+    attempts fail (e.g. in CI environments where the Microsoft service is
+    unreachable).
 
     Args:
         script_text: The narration text to convert to speech.
@@ -188,7 +213,7 @@ def generate_speech(script_text: str) -> tuple[Path, float]:
         :class:`pathlib.Path` pointing to the generated MP3 file.
 
     Raises:
-        RuntimeError: If edge-tts fails.
+        RuntimeError: If all TTS engines fail.
     """
     tmp_file = tempfile.NamedTemporaryFile(suffix=".mp3", delete=False)
     audio_path = Path(tmp_file.name)
@@ -199,25 +224,64 @@ def generate_speech(script_text: str) -> tuple[Path, float]:
     clean_text = _clean_text_for_tts(script_text)
     logger.debug("Cleaned TTS text (%d chars): %s…", len(clean_text), clean_text[:80])
 
-    try:
-        import edge_tts  # type: ignore[import]  # noqa: F401 — check availability before asyncio.run
+    # --- Primary: edge-tts with per-voice retry ---
+    primary_voice = pick_voice()
+    # Add up to 2 stable fallback voices (different from the primary) for retry
+    fallback_voices = [v["name"] for v in _VOICE_POOL if v["name"] != primary_voice][:2]
+    voices_to_try = [primary_voice] + fallback_voices
 
-        voice = pick_voice()
-        asyncio.run(
-            _generate_edge_tts(
-                clean_text,
-                str(audio_path),
-                voice,
-                config.TTS_RATE,
-            )
+    last_edge_exc: Exception | None = None
+    try:
+        import edge_tts  # type: ignore[import]  # noqa: F401 — availability check
+        import edge_tts.exceptions as _edge_exc  # type: ignore[import]
+        for attempt, voice in enumerate(voices_to_try, start=1):
+            try:
+                asyncio.run(
+                    _generate_edge_tts(clean_text, str(audio_path), voice, config.TTS_RATE)
+                )
+                logger.info("Food narration TTS generated via edge-tts (voice: %s)", voice)
+                last_edge_exc = None
+                break
+            except _edge_exc.NoAudioReceived as exc:
+                last_edge_exc = exc
+                logger.warning(
+                    "edge-tts attempt %d/%d failed — no audio received for voice '%s': %s",
+                    attempt, len(voices_to_try), voice, exc,
+                )
+            except Exception as exc:  # noqa: BLE001
+                last_edge_exc = exc
+                logger.warning(
+                    "edge-tts attempt %d/%d failed (voice: %s): %s",
+                    attempt, len(voices_to_try), voice, exc,
+                )
+    except ImportError as exc:  # noqa: BLE001
+        last_edge_exc = exc
+        logger.warning("edge-tts not installed: %s", exc)
+
+    # --- Fallback: gTTS (Google TTS) ---
+    if last_edge_exc is not None:
+        logger.warning(
+            "All edge-tts attempts failed — falling back to gTTS. Last error: %s",
+            last_edge_exc,
         )
-        logger.info("Food narration TTS generated via edge-tts (voice: %s)", voice)
-    except Exception as edge_exc:  # noqa: BLE001
-        audio_path.unlink(missing_ok=True)
-        raise RuntimeError(
-            f"edge-tts failed: {edge_exc}. "
-            "Ensure edge-tts is installed: pip install edge-tts"
-        ) from edge_exc
+        try:
+            _generate_gtts(clean_text, str(audio_path))
+            logger.info("Food narration TTS generated via gTTS (fallback)")
+        except ImportError as gtts_exc:
+            audio_path.unlink(missing_ok=True)
+            raise RuntimeError(
+                f"All TTS engines failed. "
+                f"edge-tts error: {last_edge_exc}. "
+                f"gTTS is not installed — run: pip install gtts"
+            ) from gtts_exc
+        except Exception as gtts_exc:  # noqa: BLE001
+            audio_path.unlink(missing_ok=True)
+            raise RuntimeError(
+                f"All TTS engines failed. "
+                f"edge-tts error: {last_edge_exc}. "
+                f"gTTS network/API error: {gtts_exc}. "
+                "Ensure dependencies are installed: pip install edge-tts gtts"
+            ) from gtts_exc
 
     if getattr(config, "TTS_VOLUME_NORMALIZE", True):
         _normalize_audio(audio_path)
