@@ -82,6 +82,22 @@ _HOOKS: list[str] = [
     "Ten seconds of prep time changes your {topic} from good to absolutely incredible.",
     "The two-ingredient upgrade that makes any {topic} taste gourmet instantly.",
     "Only four steps stand between you and the best {topic} you have ever made.",
+    # South Asian cuisine hooks
+    "This {topic} technique will make your family think you flew in a chef from Lahore.",
+    "The spice ratio Pakistani grandmothers swear by for the perfect {topic}.",
+    "Why your {topic} never tastes like the dhaba version — and the exact fix.",
+    "This is the Afghan secret that transforms ordinary {topic} into something magical.",
+    "One marinade, one technique — and your {topic} will taste like a Kabul street stall.",
+    "Indian grandmothers have been using this {topic} trick for generations and it still works.",
+    "The dum cooking method that makes {topic} taste like it simmered all day.",
+    "Street food vendors in Delhi use this one trick to make {topic} irresistible.",
+    "This is the tandoor secret that makes restaurant {topic} taste so much better at home.",
+    "Three spices is all you need to make your {topic} taste authentically South Asian.",
+    "The layering technique that takes {topic} from bland to absolutely unforgettable.",
+    "Why soaking makes all the difference when it comes to perfect {topic}.",
+    "Your {topic} is missing this one ingredient that every Pakistani cook knows.",
+    "How to build the deep flavor base that makes Indian {topic} so addictive.",
+    "This slow-cooked {topic} method has been passed down for hundreds of years.",
 ]
 
 # ---------------------------------------------------------------------------
@@ -325,6 +341,19 @@ _TOPIC_TAG_MAP: list[tuple[list[str], list[str]]] = [
     (["slow cooker", "crockpot", "instant pot"], ["slow cooker recipe", "easy slow cooker", "hands off cooking"]),
     (["healthy", "diet", "nutrition", "protein", "low calorie"], ["healthy recipe", "weight loss food", "nutritious meals"]),
     (["budget", "cheap", "affordable", "frugal"], ["budget cooking", "cheap meals", "affordable recipes"]),
+    # Pakistani cuisine tags
+    (["biryani", "karahi", "nihari", "haleem", "korma", "keema"], ["Pakistani food", "biryani recipe", "South Asian cooking"]),
+    (["samosa", "pakora", "seekh kabab", "chapli kabab", "tikka"], ["Pakistani street food", "desi snacks", "kebab recipe"]),
+    (["naan", "paratha", "roti", "chapati", "puri"], ["Pakistani bread", "desi bread", "homemade naan"]),
+    (["daal", "dal", "lentil", "chana", "chole"], ["lentil recipe", "daal recipe", "vegetarian Indian"]),
+    # Afghan cuisine tags
+    (["kabuli palaw", "qabuli pulao", "bolani", "mantu", "aushak", "qorma", "shorwa"], ["Afghan food", "Afghan recipe", "Central Asian cooking"]),
+    # Indian cuisine tags
+    (["butter chicken", "tikka masala", "paneer", "palak", "dal makhani"], ["Indian food", "Indian recipe", "curry recipe"]),
+    (["dosa", "idli", "sambar", "rasam", "uttapam", "vada"], ["South Indian food", "dosa recipe", "idli recipe"]),
+    (["tandoori", "tandoor", "dum", "biryani", "hyderabadi"], ["tandoori recipe", "dum cooking", "Indian biryani"]),
+    (["chai", "masala chai", "lassi", "mango lassi", "raita"], ["Indian drinks", "masala chai recipe", "lassi recipe"]),
+    (["chaat", "pani puri", "bhel puri", "pav bhaji", "gol gappa"], ["Indian street food", "chaat recipe", "street food at home"]),
 ]
 
 
