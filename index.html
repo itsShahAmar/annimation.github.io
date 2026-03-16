@@ -792,33 +792,33 @@
       <div class="pipeline-grid">
         <div class="pipeline-step">
           <div class="icon">🎭</div>
-          <strong>Find Comedy Gold</strong>
-          <div class="desc">Trending topics + comedy scoring</div>
+          <strong>Find Trending Topics</strong>
+          <div class="desc">Google Trends + Hacker News scoring</div>
         </div>
         <div class="pipeline-step">
           <div class="icon">✍️</div>
-          <strong>Write Jokes</strong>
-          <div class="desc">AI comedy script engine</div>
+          <strong>Write &amp; Optimise</strong>
+          <div class="desc">AI script + Viral Optimization Engine</div>
         </div>
         <div class="pipeline-step">
           <div class="icon">🎙️</div>
           <strong>Voice Acting</strong>
-          <div class="desc">Expressive neural TTS</div>
+          <div class="desc">Expressive neural TTS narration</div>
         </div>
         <div class="pipeline-step">
           <div class="icon">🎬</div>
-          <strong>Animate It</strong>
-          <div class="desc">Cartoon-style video assembly</div>
+          <strong>Assemble Footage</strong>
+          <div class="desc">6-source video fallback chain</div>
         </div>
         <div class="pipeline-step">
-          <div class="icon">🖼️</div>
-          <strong>Eye-Candy Thumbnail</strong>
-          <div class="desc">Viral comedy thumbnails</div>
+          <div class="icon">🎵</div>
+          <strong>Score &amp; Mix</strong>
+          <div class="desc">6-source music + TTS audio mix</div>
         </div>
         <div class="pipeline-step">
           <div class="icon">🚀</div>
           <strong>Upload &amp; Go Viral</strong>
-          <div class="desc">Direct to YouTube</div>
+          <div class="desc">Direct to YouTube Shorts</div>
         </div>
       </div>
     </div>
@@ -835,7 +835,7 @@
         <div class="feature-card">
           <div class="feature-icon">💸</div>
           <h3>Completely Free</h3>
-          <p>No paid APIs. Uses Google TTS, template scripts, and free Pexels stock footage.</p>
+          <p>No paid APIs required. Uses free stock footage, free music sources, and open-source tools.</p>
         </div>
         <div class="feature-card">
           <div class="feature-icon">🤖</div>
@@ -843,9 +843,24 @@
           <p>Runs on GitHub Actions every 6 hours. No server or manual intervention needed.</p>
         </div>
         <div class="feature-card">
+          <div class="feature-icon">🔥</div>
+          <h3>Viral Optimization Engine</h3>
+          <p>Scores hooks, CTAs, emotional triggers, and title CTR — then auto-boosts every script for maximum reach.</p>
+        </div>
+        <div class="feature-card">
           <div class="feature-icon">📈</div>
           <h3>Trend-Powered</h3>
           <p>Scores topics from Google Trends and Hacker News for maximum viral potential.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🎬</div>
+          <h3>Multi-Source Footage</h3>
+          <p>Waterfall fallback chain: Pexels → Pixabay → Coverr → Videvo → Unsplash → placeholder. Never fails.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🎵</div>
+          <h3>Multi-Source Music</h3>
+          <p>Pixabay → Jamendo → Free Music Archive → ccMixter → Freesound → silence. Always gets a track.</p>
         </div>
         <div class="feature-card">
           <div class="feature-icon">📱</div>
@@ -1075,10 +1090,11 @@ EOF</pre>
         <h2><span class="step">4</span> Configure &amp; Launch</h2>
         <p class="card-description">Add your secrets and enable the automation pipeline.</p>
 
-        <ol class="steps-list" id="setup-steps">
+          <ol class="steps-list" id="setup-steps">
           <li>
             <strong>Get a Pexels API key</strong> — Sign up for free at
             <a href="https://www.pexels.com/api/" target="_blank" rel="noopener">pexels.com/api</a>.
+            This is the only required stock footage key; all other sources work without a key.
           </li>
           <li>
             <strong>Add GitHub Secrets</strong> — In your fork go to
@@ -1086,7 +1102,21 @@ EOF</pre>
             <div class="token-box" style="margin-top:0.5rem">
               <pre>YOUTUBE_CLIENT_SECRET  → Full OAuth2 client secret JSON
 YOUTUBE_TOKEN          → JSON with access_token &amp; refresh_token (from Step 3)
-PEXELS_API_KEY         → Your free Pexels API key</pre>
+PEXELS_API_KEY         → Your free Pexels API key (required)</pre>
+            </div>
+            <p style="margin-top:0.6rem; font-size:0.85rem; color:var(--text-secondary);">
+              The following are <strong>optional</strong> — add them to unlock additional stock footage
+              and music sources. The pipeline works without them thanks to the multi-source fallback chain.
+            </p>
+            <div class="token-box" style="margin-top:0.5rem">
+              <pre><em># Optional — extra stock footage sources</em>
+PIXABAY_API_KEY        → Free at <a href="https://pixabay.com/api/docs/" target="_blank" rel="noopener" style="color:var(--accent-light)">pixabay.com/api/docs</a>
+UNSPLASH_ACCESS_KEY    → Free at <a href="https://unsplash.com/developers" target="_blank" rel="noopener" style="color:var(--accent-light)">unsplash.com/developers</a>
+VIDEVO_API_KEY         → Free at <a href="https://www.videvo.net/api/" target="_blank" rel="noopener" style="color:var(--accent-light)">videvo.net/api</a>
+
+<em># Optional — extra music sources</em>
+JAMENDO_CLIENT_ID      → Free at <a href="https://devportal.jamendo.com" target="_blank" rel="noopener" style="color:var(--accent-light)">devportal.jamendo.com</a>
+FREESOUND_API_KEY      → Free at <a href="https://freesound.org/apiv2/apply/" target="_blank" rel="noopener" style="color:var(--accent-light)">freesound.org/apiv2/apply</a></pre>
             </div>
           </li>
           <li>
@@ -1096,12 +1126,124 @@ PEXELS_API_KEY         → Your free Pexels API key</pre>
         </ol>
       </div>
 
+      <!-- Stock Footage Sources -->
+      <div class="card fade-in" id="footage-sources-card">
+        <h2>🎬 Stock Footage Sources &amp; Fallback Chain</h2>
+        <p class="card-description">
+          Video clips are sourced automatically using a <strong>6-source priority chain</strong> — tried in order
+          until footage is found. Pexels is the only required API key; all others are optional or require no key at all.
+        </p>
+        <table class="cost-table" style="margin-top:1rem;">
+          <thead>
+            <tr>
+              <th>Priority</th>
+              <th>Source</th>
+              <th>API Key Required</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>1️⃣ Primary</td>
+              <td><a href="https://www.pexels.com/api/" target="_blank" rel="noopener">Pexels Videos</a></td>
+              <td><code>PEXELS_API_KEY</code> <em>(required)</em></td>
+              <td>HD portrait food footage, large library</td>
+            </tr>
+            <tr>
+              <td>2️⃣ Secondary</td>
+              <td><a href="https://pixabay.com/api/docs/" target="_blank" rel="noopener">Pixabay Videos</a></td>
+              <td><code>PIXABAY_API_KEY</code> <em>(optional)</em></td>
+              <td>Free, large library, royalty-free</td>
+            </tr>
+            <tr>
+              <td>3️⃣ Free Auto</td>
+              <td><a href="https://coverr.co" target="_blank" rel="noopener">Coverr</a></td>
+              <td><span class="free-badge">None needed</span></td>
+              <td>100% free stock footage, no key required</td>
+            </tr>
+            <tr>
+              <td>4️⃣ Optional</td>
+              <td><a href="https://www.videvo.net/api/" target="_blank" rel="noopener">Videvo</a></td>
+              <td><code>VIDEVO_API_KEY</code> <em>(optional)</em></td>
+              <td>Large free footage library with API access</td>
+            </tr>
+            <tr>
+              <td>5️⃣ Image Fallback</td>
+              <td><a href="https://unsplash.com/developers" target="_blank" rel="noopener">Unsplash</a></td>
+              <td><code>UNSPLASH_ACCESS_KEY</code> <em>(optional)</em></td>
+              <td>High-quality photography with Ken Burns effect</td>
+            </tr>
+            <tr>
+              <td>5️⃣ Alt Image</td>
+              <td><a href="https://www.pexels.com/api/" target="_blank" rel="noopener">Pexels Images</a></td>
+              <td><code>PEXELS_API_KEY</code> <em>(required)</em></td>
+              <td>Photo fallback when video unavailable</td>
+            </tr>
+            <tr>
+              <td>6️⃣ Always Works</td>
+              <td>Warm Gradient Placeholder</td>
+              <td><span class="free-badge">None needed</span></td>
+              <td>Guaranteed fallback — pipeline never fails</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Viral Optimization Engine Card -->
+      <div class="card fade-in" id="viral-engine-card">
+        <h2>🔥 Viral Optimization Engine</h2>
+        <p class="card-description">
+          Every script is automatically scored and enhanced by the built-in <strong>Viral Optimization Engine</strong>
+          before video production begins. No configuration required — it runs automatically.
+        </p>
+        <div class="features-grid" style="margin-top:1rem; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+          <div class="feature-card">
+            <div class="feature-icon">🎯</div>
+            <h3>Hook Strength Score</h3>
+            <p>Rates the opening hook on curiosity-gap and pattern-interrupt intensity (0–100%).</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">💡</div>
+            <h3>Emotional Impact</h3>
+            <p>Detects emotional trigger word density — the biggest driver of shares and saves.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">📣</div>
+            <h3>CTA Placement</h3>
+            <p>Verifies CTAs hit at 25%, 50%, 75%, and 95% of the script for optimal conversion.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">📊</div>
+            <h3>Retention Prediction</h3>
+            <p>Estimates viewer retention rate based on hook, emotion, and engagement scores.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">🏷️</div>
+            <h3>A/B Title Variants</h3>
+            <p>Generates 3 title variants per run — curiosity-gap, number-based, and authority angles.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">⚡</div>
+            <h3>Auto-Boost</h3>
+            <p>Automatically injects missing CTAs, power words, and emojis to maximise click-through.</p>
+          </div>
+        </div>
+        <div class="notice" style="margin-top:1rem;">
+          <strong>🏆 Viral Score Tiers:</strong>
+          <code style="color:var(--accent)">viral</code> ≥ 80% &nbsp;|&nbsp;
+          <code style="color:var(--orange)">high_potential</code> 65–80% &nbsp;|&nbsp;
+          <code style="color:var(--text-secondary)">standard</code> 45–65% &nbsp;|&nbsp;
+          <code style="color:var(--text-muted)">below_average</code> &lt;45%
+          <br><small style="color:var(--text-muted);">Scores and improvement suggestions are printed in the GitHub Actions run log for every video.</small>
+        </div>
+      </div>
+
       <!-- Optional: Music API Keys -->
       <div class="card fade-in" id="music-sources-card">
-        <h2>🎵 Free Music Sources &amp; Fallbacks</h2>
+        <h2>🎵 Music Sources &amp; Fallback Chain</h2>
         <p class="card-description">
-          Background music is sourced automatically using a multi-source fallback chain — no manual
-          configuration required. Each source is tried in order until one succeeds.
+          Background music is sourced automatically using a <strong>6-source fallback chain</strong> — no manual
+          configuration required. Each source is tried in order until one succeeds. The pipeline always gets music.
         </p>
         <table class="cost-table" style="margin-top:1rem;">
           <thead>
@@ -1121,31 +1263,44 @@ PEXELS_API_KEY         → Your free Pexels API key</pre>
             </tr>
             <tr>
               <td>2️⃣ Secondary</td>
-              <td><a href="https://freemusicarchive.org" target="_blank" rel="noopener">Free Music Archive</a></td>
-              <td><span class="free-badge">None needed</span></td>
-              <td>Creative Commons licensed music</td>
+              <td><a href="https://devportal.jamendo.com" target="_blank" rel="noopener">Jamendo</a></td>
+              <td><code>JAMENDO_CLIENT_ID</code> <em>(optional)</em></td>
+              <td>200K+ Creative Commons tracks, instrumental only</td>
             </tr>
             <tr>
-              <td>3️⃣ Optional</td>
+              <td>3️⃣ Free Auto</td>
+              <td><a href="https://freemusicarchive.org" target="_blank" rel="noopener">Free Music Archive</a></td>
+              <td><span class="free-badge">None needed</span></td>
+              <td>Creative Commons licensed music, no key</td>
+            </tr>
+            <tr>
+              <td>4️⃣ Free Auto</td>
+              <td><a href="https://ccmixter.org" target="_blank" rel="noopener">ccMixter</a></td>
+              <td><span class="free-badge">None needed</span></td>
+              <td>Remix-friendly CC instrumental music, no key</td>
+            </tr>
+            <tr>
+              <td>5️⃣ Optional</td>
               <td><a href="https://freesound.org/apiv2/apply/" target="_blank" rel="noopener">Freesound</a></td>
               <td><code>FREESOUND_API_KEY</code> <em>(optional)</em></td>
               <td>Large community sound library</td>
             </tr>
             <tr>
-              <td>4️⃣ Fallback</td>
+              <td>6️⃣ Always Works</td>
               <td>Silence Generator</td>
               <td><span class="free-badge">None needed</span></td>
-              <td>Always succeeds — guarantees an audio track</td>
+              <td>60s silent WAV — pipeline never fails without music</td>
             </tr>
           </tbody>
         </table>
         <p style="margin-top:1rem; font-size:0.88rem; color:var(--text-secondary);">
           💡 <strong>Tip:</strong> Add the optional secrets below to unlock higher-quality music sources.
-          If none are configured, the pipeline still works using Free Music Archive and the silence fallback.
+          Free Music Archive and ccMixter work without any API key, so you will always get background music.
         </p>
         <div class="token-box" style="margin-top:0.75rem;">
           <label>Optional music secrets (add to GitHub Secrets → Actions)</label>
           <pre>PIXABAY_API_KEY     → Free at <a href="https://pixabay.com/api/docs/" target="_blank" rel="noopener" style="color:var(--accent-light)">pixabay.com/api/docs</a>
+JAMENDO_CLIENT_ID   → Free at <a href="https://devportal.jamendo.com" target="_blank" rel="noopener" style="color:var(--accent-light)">devportal.jamendo.com</a>
 FREESOUND_API_KEY   → Free at <a href="https://freesound.org/apiv2/apply/" target="_blank" rel="noopener" style="color:var(--accent-light)">freesound.org/apiv2/apply</a></pre>
         </div>
       </div>

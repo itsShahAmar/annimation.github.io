@@ -78,6 +78,21 @@ def run_pipeline() -> None:
         from src.scriptwriter import generate_script  # noqa: PLC0415
 
         script_data = generate_script(topic)
+
+        # ------------------------------------------------------------------
+        # Step 2.5: Apply the Viral Optimization Engine
+        # ------------------------------------------------------------------
+        logger.info("[2.5/6] \U0001f525 Viral engine — scoring and optimising script…")
+        from src.viral_optimizer import optimize_script_data  # noqa: PLC0415
+
+        viral_score, script_data = optimize_script_data(script_data, topic)
+        logger.info(
+            "      Viral score: %.2f (%s) | estimated retention: %.0f%%",
+            viral_score.overall, viral_score.label, viral_score.retention_estimate * 100,
+        )
+        if getattr(config, "VIRAL_A_B_TITLES", True) and script_data.get("title_variants"):
+            logger.info("      Title variants: %s", script_data["title_variants"])
+
         title = script_data["title"]
         script_text = script_data["script"]
         caption_text = script_data["caption_script"]
@@ -150,6 +165,8 @@ def run_pipeline() -> None:
         logger.info("\U0001f389 Food Making Videos Factory — pipeline completed in %.1f seconds", elapsed)
         logger.info("  Topic      : %s", topic)
         logger.info("  Title      : %s", title)
+        logger.info("  Viral score: %.2f (%s)", viral_score.overall, viral_score.label)
+        logger.info("  Retention  : ~%.0f%%", viral_score.retention_estimate * 100)
         logger.info("  Video ID   : %s", video_id)
         logger.info("  URL        : %s", video_url)
         logger.info("=" * 60)

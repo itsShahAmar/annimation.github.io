@@ -1,19 +1,19 @@
 """
 video_creator.py — Build a vertical YouTube Shorts video for the Food Making Videos Factory.
 
-Assembles food footage from multiple stock media sources (Pexels, Pixabay, Unsplash),
-TTS audio, and bold captions using MoviePy.
+Assembles food footage from multiple stock media sources (Pexels, Pixabay, Coverr,
+Videvo, Unsplash), TTS audio, and bold captions using MoviePy.
 
 Workflow:
-1. Fetch food-themed stock video clips from rotating stock sources (Pexels, Pixabay) for each scene.
-2. Use Unsplash as fallback for high-quality food photography with Ken Burns effect.
-3. Resize / crop each clip to 1080 × 1920 (portrait).
-4. Apply warm, vibrant colour grading for food appeal.
-5. Concatenate clips with crossfade transitions.
-6. Overlay TTS audio with optional background music.
-7. Burn bold, engaging captions with warm pill backgrounds.
-8. Apply fade-in / fade-out.
-9. Export as high-quality H.264/AAC MP4.
+1. Fetch food-themed stock video clips from a priority chain of free sources for each scene:
+   Pexels → Pixabay → Coverr → Videvo → Unsplash (image+Ken Burns) → Pexels image → placeholder
+2. Resize / crop each clip to 1080 × 1920 (portrait).
+3. Apply warm, vibrant colour grading for food appeal.
+4. Concatenate clips with crossfade transitions.
+5. Overlay TTS audio with optional background music (multi-source fallback).
+6. Burn bold, engaging captions with warm pill backgrounds.
+7. Apply fade-in / fade-out.
+8. Export as high-quality H.264/AAC MP4.
 """
 
 import logging
@@ -47,6 +47,8 @@ _PEXELS_IMAGE_SEARCH = "https://api.pexels.com/v1/search"
 _PIXABAY_VIDEO_SEARCH = "https://pixabay.com/api/videos/"
 _PIXABAY_IMAGE_SEARCH = "https://pixabay.com/api/"
 _UNSPLASH_SEARCH = "https://api.unsplash.com/search/photos"
+_COVERR_API_URL = "https://api.coverr.co/videos"
+_VIDEVO_API_URL = "https://www.videvo.net/api/v1/video-clips"
 
 # ---------------------------------------------------------------------------
 # Food-themed search query suffixes — appended to scene descriptions to prefer
@@ -136,14 +138,35 @@ def _search_pexels_video(query: str, per_page: int = 5) -> list[str]:
     food_query = _make_food_query(query)
     urls = _fetch(food_query)
 
-    # If insufficient results, try Pixabay as secondary source
-    if len(urls) < 2:
-        pixabay_urls = _search_pixabay_video(food_query, per_page=3)
-        if pixabay_urls:
-            logger.info("Using Pixabay as secondary source for '%s'", food_query)
-            urls = pixabay_urls + urls
+    # If insufficient results, work through the source priority chain
+    source_priority: list[str] = getattr(
+        config, "VIDEO_SOURCE_PRIORITY",
+        ["pexels", "pixabay", "coverr", "videvo", "unsplash", "pexels_image", "placeholder"]
+    )
 
-    # If still insufficient, try a broader food fallback
+    for source in source_priority:
+        if len(urls) >= 2:
+            break
+        if source == "pexels":
+            continue  # already tried above
+        if source == "pixabay":
+            pixabay_urls = _search_pixabay_video(food_query, per_page=3)
+            if pixabay_urls:
+                logger.info("Using Pixabay as secondary source for '%s'", food_query)
+                urls = pixabay_urls + urls
+        elif source == "coverr":
+            coverr_urls = _search_coverr_video(food_query, per_page=3)
+            if coverr_urls:
+                logger.info("Using Coverr as tertiary source for '%s'", food_query)
+                urls = coverr_urls + urls
+        elif source == "videvo":
+            videvo_urls = _search_videvo_video(food_query, per_page=3)
+            if videvo_urls:
+                logger.info("Using Videvo as additional source for '%s'", food_query)
+                urls = videvo_urls + urls
+        # unsplash / pexels_image / placeholder are handled per-scene in the main loop
+
+    # Last resort: broaden to generic food fallback query
     if len(urls) < 2:
         fallback_q = random.choice(_FOOD_FALLBACK_QUERIES)
         logger.info("Broadening search from '%s' to '%s'", food_query, fallback_q)
@@ -239,6 +262,100 @@ def _search_unsplash_image(query: str) -> str | None:
     except Exception as exc:  # noqa: BLE001
         logger.warning("Unsplash image search failed for '%s': %s", query, exc)
     return None
+
+
+def _search_coverr_video(query: str, per_page: int | None = None) -> list[str]:
+    """Search Coverr for free stock footage matching *query*.
+
+    Coverr offers a free public API (no registration required) that returns
+    MP4 video URLs ready for download.
+
+    Public API token ``0H2YMH75AH`` is used by default.  Override via the
+    ``COVERR_API_TOKEN`` environment variable or ``config.COVERR_API_TOKEN``.
+
+    Args:
+        query:    Search query string (food/cooking focused).
+        per_page: Number of results to request (default: ``config.COVERR_PER_PAGE``).
+
+    Returns:
+        List of downloadable MP4 video URLs, empty on any failure.
+    """
+    token = getattr(config, "COVERR_API_TOKEN", "0H2YMH75AH")
+    if per_page is None:
+        per_page = getattr(config, "COVERR_PER_PAGE", 5)
+
+    try:
+        resp = requests.get(
+            _COVERR_API_URL,
+            params={"token": token, "query": query, "limit": per_page},
+            timeout=15,
+        )
+        resp.raise_for_status()
+        data: dict[str, Any] = resp.json()
+        hits = data.get("hits", [])
+        urls: list[str] = []
+        for hit in hits:
+            # Coverr may expose the MP4 URL at different keys across API versions
+            url = (
+                hit.get("url")
+                or hit.get("video_url")
+                or hit.get("mp4")
+                or hit.get("preview_url")
+            )
+            if url and url.lower().endswith(".mp4"):
+                urls.append(url)
+        logger.debug("Coverr search for '%s': %d results", query, len(urls))
+        return urls
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Coverr video search failed for '%s': %s", query, exc)
+    return []
+
+
+def _search_videvo_video(query: str, per_page: int = 5) -> list[str]:
+    """Search Videvo for free stock video clips matching *query*.
+
+    Requires ``VIDEVO_API_KEY`` to be set (register for free at videvo.net/api).
+    Returns empty list gracefully if the key is absent or the request fails.
+
+    Args:
+        query:    Search query string.
+        per_page: Number of results to request.
+
+    Returns:
+        List of downloadable MP4 video URLs, empty on any failure.
+    """
+    api_key = getattr(config, "VIDEVO_API_KEY", None)
+    if not api_key:
+        logger.debug("VIDEVO_API_KEY not configured — skipping Videvo video search")
+        return []
+    try:
+        resp = requests.get(
+            _VIDEVO_API_URL,
+            params={
+                "api_token": api_key,
+                "query": query,
+                "per_page": per_page,
+                "type": "footage",
+            },
+            timeout=15,
+        )
+        resp.raise_for_status()
+        data: dict[str, Any] = resp.json()
+        results = data.get("footage", []) or data.get("results", []) or data.get("data", [])
+        urls: list[str] = []
+        for item in results:
+            url = (
+                item.get("download_url")
+                or item.get("video_url")
+                or item.get("url")
+            )
+            if url:
+                urls.append(url)
+        logger.debug("Videvo search for '%s': %d results", query, len(urls))
+        return urls
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Videvo video search failed for '%s': %s", query, exc)
+    return []
 
 
 def _download_file(url: str, suffix: str) -> Path:
@@ -654,12 +771,12 @@ def create_video(
                     logger.warning("Failed to load video from Pexels: %s", exc)
 
             if not clip_added:
-                # Try Unsplash as additional image fallback
-                unsplash_url = _search_unsplash_image(f"{scene} food")
-                if not unsplash_url:
+                # Image fallback chain: Unsplash → Pexels image → Coverr → gradient
+                img_url: str | None = None
+                img_url = _search_unsplash_image(f"{scene} food")
+                if not img_url:
                     img_url = _search_pexels_image(scene)
-                else:
-                    img_url = unsplash_url
+
                 if img_url:
                     try:
                         img_path = _download_file(img_url, ".jpg")
@@ -672,6 +789,28 @@ def create_video(
                         clip_added = True
                     except Exception as exc:  # noqa: BLE001
                         logger.warning("Failed to load image from stock source: %s", exc)
+
+                # If still no clip, attempt Coverr video as last video source fallback
+                if not clip_added:
+                    coverr_urls = _search_coverr_video(f"{scene} food", per_page=2)
+                    for curl in coverr_urls:
+                        try:
+                            vpath = _download_file(curl, ".mp4")
+                            downloaded.append(vpath)
+                            vc = VideoFileClip(str(vpath))
+                            scene_dur = time_per_scene + transition_dur
+                            if vc.duration > scene_dur:
+                                start_t = random.uniform(0.0, max(0.0, vc.duration - scene_dur))
+                                vc = vc.subclip(start_t, start_t + scene_dur)
+                            else:
+                                vc = vc.subclip(0, min(vc.duration, scene_dur))
+                            vc = _resize_clip(vc, w, h)
+                            video_clips.append(vc)
+                            clip_added = True
+                            logger.info("Coverr fallback clip used for scene '%s'", scene)
+                            break
+                        except Exception as exc:  # noqa: BLE001
+                            logger.warning("Failed to load Coverr fallback clip: %s", exc)
 
             if not clip_added:
                 logger.warning("No footage for scene '%s'; using warm gradient placeholder", scene)
@@ -706,22 +845,27 @@ def create_video(
         # Prefer dynamically-supplied music_path; fall back to static BG_MUSIC_PATH
         effective_music_path = music_path if music_path is not None else Path(config.BG_MUSIC_PATH)
 
-        if effective_music_path.exists() and config.BG_MUSIC_VOLUME > 0:
+        music_volume = getattr(config, "MUSIC_VOLUME", getattr(config, "BG_MUSIC_VOLUME", 0.08))
+        if effective_music_path.exists() and music_volume > 0:
             try:
                 fade_dur = getattr(config, "MUSIC_FADE_DURATION", 1.0)
                 bg_audio = (
                     AudioFileClip(str(effective_music_path))
-                    .volumex(config.BG_MUSIC_VOLUME)
+                    .volumex(music_volume)
                     .set_duration(target_duration)
                 )
                 bg_audio = bg_audio.audio_fadein(fade_dur).audio_fadeout(fade_dur * 2)
                 mixed_audio = CompositeAudioClip([bg_audio, tts_audio])
                 base = base.set_audio(mixed_audio)
-                logger.info("Background music mixed in at volume %.2f", config.BG_MUSIC_VOLUME)
+                logger.info("Background music mixed in at volume %.2f", music_volume)
             except Exception as exc:  # noqa: BLE001
                 logger.warning("Could not mix background music: %s — using TTS only", exc)
                 base = base.set_audio(tts_audio)
         else:
+            if music_path is not None:
+                logger.warning(
+                    "Music path '%s' does not exist — using TTS narration only", music_path
+                )
             base = base.set_audio(tts_audio)
 
         # ------------------------------------------------------------------

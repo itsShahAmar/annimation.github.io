@@ -8,8 +8,33 @@ YOUTUBE_TOKEN_JSON: str | None = os.getenv("YOUTUBE_TOKEN")  # JSON string of OA
 PEXELS_API_KEY: str | None = os.getenv("PEXELS_API_KEY")  # For stock footage (free tier)
 NEWSAPI_KEY: str | None = os.getenv("NEWSAPI_KEY")  # NewsAPI.org key for trending headlines (optional)
 OPENROUTER_API_KEY: str | None = os.getenv("OPENROUTER_API_KEY")  # OpenRouter AI key for script generation
-PIXABAY_API_KEY: str | None = os.getenv("PIXABAY_API_KEY")  # Pixabay API key for additional stock footage
+PIXABAY_API_KEY: str | None = os.getenv("PIXABAY_API_KEY")  # Pixabay API key for additional stock footage & music
 UNSPLASH_ACCESS_KEY: str | None = os.getenv("UNSPLASH_ACCESS_KEY")  # Unsplash API key for food photography
+
+# ---------------------------------------------------------------------------
+# Additional stock footage API keys (all optional — pipeline works without them)
+# ---------------------------------------------------------------------------
+# Coverr — free stock footage, no API key required (uses public token)
+COVERR_API_TOKEN: str = os.getenv("COVERR_API_TOKEN", "0H2YMH75AH")  # default public token
+# Videvo — optional; register at videvo.net/api
+VIDEVO_API_KEY: str | None = os.getenv("VIDEVO_API_KEY")
+# Storyblocks (Videoblocks) — optional paid tier; register at storyblocks.com/api
+STORYBLOCKS_PUBLIC_KEY: str | None = os.getenv("STORYBLOCKS_PUBLIC_KEY")
+STORYBLOCKS_PRIVATE_KEY: str | None = os.getenv("STORYBLOCKS_PRIVATE_KEY")
+
+# ---------------------------------------------------------------------------
+# Stock footage source priority chain — tried in order until one succeeds.
+#   "pexels"       — Pexels Videos API (requires PEXELS_API_KEY)
+#   "pixabay"      — Pixabay Videos API (requires PIXABAY_API_KEY)
+#   "coverr"       — Coverr free footage API (no key required)
+#   "videvo"       — Videvo API (requires VIDEVO_API_KEY)
+#   "unsplash"     — Unsplash image fallback with Ken Burns effect (requires UNSPLASH_ACCESS_KEY)
+#   "pexels_image" — Pexels image fallback with Ken Burns effect (requires PEXELS_API_KEY)
+#   "placeholder"  — Warm gradient placeholder (always succeeds)
+# ---------------------------------------------------------------------------
+VIDEO_SOURCE_PRIORITY: list = [
+    "pexels", "pixabay", "coverr", "videvo", "unsplash", "pexels_image", "placeholder"
+]
 
 # Video settings
 VIDEO_WIDTH: int = 1080
@@ -19,7 +44,7 @@ VIDEO_DURATION_TARGET: int = 55  # seconds target — optimal for food Shorts re
 FONT_SIZE: int = 60
 FONT_COLOR: str = "white"
 BG_MUSIC_VOLUME: float = 0.08
-BG_MUSIC_PATH: str = "assets/bg_music.mp3"  # Relative path to background music file (leave empty to disable)
+BG_MUSIC_PATH: str = "assets/bg_music.mp3"  # Optional static background music file
 
 # ---------------------------------------------------------------------------
 # Background music settings — scene-aware music selection and mixing
@@ -31,13 +56,19 @@ MUSIC_CACHE_DIR: str = "cache/music"         # Local cache directory for downloa
 
 # Music source fallback chain — tried in order until one succeeds.
 # Remove or reorder entries to customise behaviour.
-#   "pixabay"          — Pixabay Music API (requires PIXABAY_API_KEY)
+#   "pixabay"            — Pixabay Music API (requires PIXABAY_API_KEY)
+#   "jamendo"            — Jamendo API (requires JAMENDO_CLIENT_ID, free registration)
 #   "free_music_archive" — Free Music Archive API (no API key required)
-#   "freesound"        — Freesound API (requires FREESOUND_API_KEY, optional)
-#   "silence"          — Locally-generated silent WAV (always succeeds)
-MUSIC_SOURCE_PRIORITY: list = ["pixabay", "free_music_archive", "freesound", "silence"]
+#   "ccmixter"           — ccMixter Creative Commons API (no API key required)
+#   "freesound"          — Freesound API (requires FREESOUND_API_KEY, optional)
+#   "silence"            — Locally-generated silent WAV (always succeeds)
+MUSIC_SOURCE_PRIORITY: list = [
+    "pixabay", "jamendo", "free_music_archive", "ccmixter", "freesound", "silence"
+]
 
 FREESOUND_API_KEY: str | None = os.getenv("FREESOUND_API_KEY")  # Optional — freesound.org API key
+# Jamendo — free music API; register at devportal.jamendo.com for a client_id
+JAMENDO_CLIENT_ID: str | None = os.getenv("JAMENDO_CLIENT_ID")  # Optional — jamendo.com free API
 
 # ---------------------------------------------------------------------------
 # Food content style settings
@@ -124,3 +155,19 @@ MAX_VIDEOS_PER_RUN: int = 1
 # OpenRouter AI settings
 OPENROUTER_MODEL: str = "openai/gpt-4o-mini"  # cost-effective model for script generation
 OPENROUTER_BASE_URL: str = "https://openrouter.ai/api/v1"
+
+# ---------------------------------------------------------------------------
+# Viral Optimization Engine — maximize reach and engagement
+# ---------------------------------------------------------------------------
+VIRAL_OPTIMIZATION_ENABLED: bool = True  # Enable the viral scoring & optimization pipeline
+VIRAL_SCORE_THRESHOLD: float = 0.65      # Min score (0-1) to classify content as "high potential"
+VIRAL_A_B_TITLES: bool = True            # Generate multiple title variants and score them
+VIRAL_TITLE_VARIANTS: int = 3            # Number of A/B title variants to generate
+VIRAL_HOOK_ROTATE: bool = True           # Rotate hook styles across runs for variety
+VIRAL_ENGAGEMENT_BOOST: bool = True      # Inject micro-CTAs and engagement triggers into scripts
+VIRAL_RETENTION_TARGET: float = 0.60    # Target viewer retention rate (60% = strong for Shorts)
+
+# ---------------------------------------------------------------------------
+# Coverr stock footage settings (free, no account required)
+# ---------------------------------------------------------------------------
+COVERR_PER_PAGE: int = 5  # results to fetch per Coverr query

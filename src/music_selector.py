@@ -4,11 +4,12 @@ music_selector.py — Scene-aware background music selection for the Food Making
 Classifies scenes by type (intro / middle / punchline) and downloads royalty-free
 background music from free sources using a multi-source fallback chain:
 
-  1. Pixabay Music API — requires ``PIXABAY_API_KEY`` (free registration at pixabay.com).
-  2. Free Music Archive API — no API key required; Creative Commons licensed tracks.
-  3. Freesound API    — optional; requires ``FREESOUND_API_KEY`` (free registration at
-                        freesound.org/apiv2/apply/).
-  4. Local silence fallback — generates a short silent WAV file so the pipeline always
+  1. Pixabay Music API   — requires ``PIXABAY_API_KEY`` (free registration at pixabay.com).
+  2. Jamendo API         — requires ``JAMENDO_CLIENT_ID`` (free at devportal.jamendo.com).
+  3. Free Music Archive  — no API key required; Creative Commons licensed tracks.
+  4. ccMixter            — no API key required; Creative Commons instrumental music.
+  5. Freesound API       — optional; requires ``FREESOUND_API_KEY`` (free at freesound.org).
+  6. Local silence fallback — generates a short silent WAV file so the pipeline always
                               has an audio track without requiring any API key or network access.
 
 Downloaded tracks are cached locally under ``MUSIC_CACHE_DIR`` to avoid redundant
@@ -37,26 +38,35 @@ _SCENE_MOOD_MAP: dict[str, list[str]] = {
         "uplifting cooking background music",
         "cheerful kitchen background music",
         "happy food background",
+        "positive upbeat background music",
     ],
     "middle": [
         "energetic cooking background music",
         "upbeat kitchen background music",
         "lively food preparation music",
+        "fun background cooking music",
     ],
     "punchline": [
         "triumphant reveal background music",
         "satisfying achievement music",
         "happy celebration food music",
+        "joyful success background music",
     ],
 }
 
 _FREESOUND_SEARCH_URL = "https://freesound.org/apiv2/search/text/"
 _PIXABAY_API_URL = "https://pixabay.com/api/"
 _FMA_API_URL = "https://freemusicarchive.org/api/get/tracks.json"
+_JAMENDO_API_URL = "https://api.jamendo.com/v3.0/tracks/"
+_CCMIXTER_API_URL = "http://ccmixter.org/api/query"
 
 # Retry settings for transient API failures (429 Too Many Requests, 503 Service Unavailable)
-_FMA_MAX_RETRIES = 3
-_FMA_RETRY_STATUSES = frozenset({429, 503})
+_MAX_RETRIES = 3
+_RETRY_STATUSES = frozenset({429, 503})
+
+# Backward-compatible aliases used by existing tests
+_FMA_MAX_RETRIES = _MAX_RETRIES
+_FMA_RETRY_STATUSES = _RETRY_STATUSES
 
 
 # ---------------------------------------------------------------------------
@@ -80,6 +90,28 @@ def _sanitize_topic(topic: str) -> str:
     """
     sanitized = re.sub(r"[^\w\s]", " ", topic)
     return " ".join(sanitized.split())
+
+
+def _stream_download(url: str, out_path: Path, timeout: int = 30) -> bool:
+    """Stream-download *url* to *out_path*. Returns True on success, False on failure."""
+    try:
+        with requests.get(url, stream=True, timeout=timeout) as r:
+            r.raise_for_status()
+            content_type = r.headers.get("content-type", "")
+            # Only skip if the server returns a concrete non-audio content-type header
+            if isinstance(content_type, str) and content_type and not any(
+                t in content_type for t in ("audio", "mpeg", "mp3", "wav", "octet")
+            ):
+                logger.debug("Skipping non-audio content-type: %s", content_type)
+                return False
+            with open(out_path, "wb") as fh:
+                for chunk in r.iter_content(chunk_size=8192):
+                    fh.write(chunk)
+        return True
+    except Exception as exc:  # noqa: BLE001
+        out_path.unlink(missing_ok=True)
+        logger.debug("Stream download failed for %s: %s", url, exc)
+        return False
 
 
 # ---------------------------------------------------------------------------
@@ -119,8 +151,6 @@ def get_mood_for_scene(scene_type: str) -> str:
     Returns:
         A descriptive music search query string.
     """
-    import time
-
     moods = _SCENE_MOOD_MAP.get(scene_type, _SCENE_MOOD_MAP["middle"])
     idx = int(time.time() // 3600) % len(moods)
     return moods[idx]
@@ -133,11 +163,13 @@ def get_music_for_scenes(scenes: list[str], topic: str) -> Path | None:
     multiple free music sources in priority order.  Previously downloaded
     tracks are served from the local cache to minimise API usage.
 
-    Fallback chain (in order):
+    Fallback chain (respects ``MUSIC_SOURCE_PRIORITY`` config):
       1. Pixabay Music API (requires ``PIXABAY_API_KEY``)
-      2. Free Music Archive API (no API key required)
-      3. Freesound API (requires ``FREESOUND_API_KEY``)
-      4. Local silence generator (always succeeds)
+      2. Jamendo API (requires ``JAMENDO_CLIENT_ID``)
+      3. Free Music Archive API (no API key required)
+      4. ccMixter API (no API key required)
+      5. Freesound API (requires ``FREESOUND_API_KEY``)
+      6. Local silence generator (always succeeds)
 
     Args:
         scenes: List of scene description strings from script generation.
@@ -179,11 +211,13 @@ def get_music_for_scenes(scenes: list[str], topic: str) -> Path | None:
 
     # --- Fallback chain (respects MUSIC_SOURCE_PRIORITY order) ---
     source_priority = getattr(config, "MUSIC_SOURCE_PRIORITY",
-                              ["pixabay", "free_music_archive", "freesound", "silence"])
+                              ["pixabay", "jamendo", "free_music_archive", "ccmixter", "freesound", "silence"])
 
     _source_handlers = {
         "pixabay": lambda: _download_from_pixabay(search_query, cache_dir, cache_key),
+        "jamendo": lambda: _download_from_jamendo(search_query, cache_dir, cache_key),
         "free_music_archive": lambda: _download_from_free_music_archive(search_query, cache_dir, cache_key),
+        "ccmixter": lambda: _download_from_ccmixter(search_query, cache_dir, cache_key),
         "freesound": lambda: _download_from_freesound(search_query, cache_dir, cache_key),
         "silence": lambda: _create_silence_fallback(cache_dir, cache_key),
     }
@@ -193,10 +227,16 @@ def get_music_for_scenes(scenes: list[str], topic: str) -> Path | None:
         if handler is None:
             logger.warning("Unknown music source '%s' in MUSIC_SOURCE_PRIORITY — skipping", source)
             continue
-        result = handler()
+        try:
+            result = handler()
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Music source '%s' raised an unexpected error: %s", source, exc)
+            result = None
         if result:
             if source == "silence":
                 logger.info("Using silence fallback — no API music available")
+            else:
+                logger.info("Background music sourced from '%s': %s", source, result)
             return result
 
     logger.warning("No background music sourced — video will use TTS narration only")
@@ -211,7 +251,7 @@ def _download_from_pixabay(query: str, cache_dir: Path, cache_key: str) -> Path 
     """Search Pixabay for background music and download the best match.
 
     Requires ``PIXABAY_API_KEY`` to be set in the environment.
-    Queries Pixabay's audio endpoint and downloads the first available track.
+    Queries Pixabay's music endpoint and downloads the first available track.
 
     Args:
         query:     Search query string.
@@ -245,28 +285,99 @@ def _download_from_pixabay(query: str, cache_dir: Path, cache_key: str) -> Path 
             return None
 
         for hit in hits:
-            audio_url = hit.get("audio")
-            if not audio_url or not audio_url.endswith(".mp3"):
+            # Pixabay music hits may expose audio URL under different field names
+            audio_url = (
+                hit.get("audio")
+                or hit.get("audio_url")
+                or hit.get("music")
+                or hit.get("url")
+            )
+            if not audio_url:
+                continue
+            # Accept any URL that looks like audio (MP3 or generic CDN link)
+            if not any(ext in audio_url.lower() for ext in (".mp3", ".wav", ".ogg", "audio", "music")):
                 continue
 
             track_id = hit.get("id", "unknown")
             out_path = cache_dir / f"{cache_key}_pixabay_{track_id}.mp3"
 
-            try:
-                with requests.get(audio_url, stream=True, timeout=30) as r:
-                    r.raise_for_status()
-                    with open(out_path, "wb") as fh:
-                        for chunk in r.iter_content(chunk_size=8192):
-                            fh.write(chunk)
-                logger.info(
-                    "Downloaded Pixabay background music (id=%s) → %s", track_id, out_path
-                )
+            if _stream_download(audio_url, out_path):
+                logger.info("Downloaded Pixabay background music (id=%s) → %s", track_id, out_path)
                 return out_path
-            except Exception as exc:  # noqa: BLE001
-                logger.warning("Failed to download Pixabay track id=%s: %s", track_id, exc)
+            logger.debug("Pixabay track id=%s download failed, trying next", track_id)
 
     except Exception as exc:  # noqa: BLE001
         logger.warning("Pixabay music search failed for query '%s': %s", query, exc)
+
+    return None
+
+
+def _download_from_jamendo(query: str, cache_dir: Path, cache_key: str) -> Path | None:
+    """Search Jamendo for royalty-free instrumental background music.
+
+    Jamendo offers a free API (requires a free ``JAMENDO_CLIENT_ID``).
+    Only instrumental tracks are requested to avoid conflicting vocals.
+
+    API reference: https://developer.jamendo.com/v3.0/tracks
+
+    Args:
+        query:     Search query string.
+        cache_dir: Directory to save the downloaded file.
+        cache_key: Short hash used as part of the cached filename.
+
+    Returns:
+        Path to the downloaded MP3, or ``None`` on any failure.
+    """
+    client_id = getattr(config, "JAMENDO_CLIENT_ID", None)
+    if not client_id:
+        logger.debug("JAMENDO_CLIENT_ID not configured — skipping Jamendo music search")
+        return None
+
+    # Use first 3 words of query for cleaner Jamendo search
+    short_query = " ".join(query.split()[:4])
+
+    try:
+        resp = requests.get(
+            _JAMENDO_API_URL,
+            params={
+                "client_id": client_id,
+                "format": "json",
+                "limit": 5,
+                "search": short_query,
+                "tags": "instrumental background",
+                "include": "musicinfo",
+                "audiodlformat": "mp32",
+                "minduration": 30,
+                "maxduration": 300,
+            },
+            timeout=15,
+        )
+        resp.raise_for_status()
+        results = resp.json().get("results", [])
+
+        if not results:
+            logger.debug("Jamendo returned no results for query '%s'", short_query)
+            return None
+
+        for track in results:
+            # Prefer direct audio download URL
+            audio_url = track.get("audiodownload") or track.get("audio")
+            if not audio_url:
+                continue
+
+            track_id = track.get("id", "unknown")
+            out_path = cache_dir / f"{cache_key}_jamendo_{track_id}.mp3"
+
+            if _stream_download(audio_url, out_path):
+                logger.info(
+                    "Downloaded Jamendo track '%s' (id=%s) → %s",
+                    track.get("name", track_id), track_id, out_path,
+                )
+                return out_path
+            logger.debug("Jamendo track id=%s download failed, trying next", track_id)
+
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Jamendo music search failed for query '%s': %s", query, exc)
 
     return None
 
@@ -279,7 +390,7 @@ def _download_from_free_music_archive(query: str, cache_dir: Path, cache_key: st
 
     The query is percent-encoded (using ``%20`` for spaces rather than ``+``)
     to avoid 404 errors from the FMA API.  Transient server errors (HTTP 429
-    and 503) are retried with exponential backoff up to ``_FMA_MAX_RETRIES``
+    and 503) are retried with exponential backoff up to ``_MAX_RETRIES``
     times before giving up.
 
     Args:
@@ -298,48 +409,56 @@ def _download_from_free_music_archive(query: str, cache_dir: Path, cache_key: st
     )
     request_url = f"{_FMA_API_URL}?{params_str}"
 
-    for attempt in range(_FMA_MAX_RETRIES):
+    for attempt in range(_MAX_RETRIES):
         try:
-            resp = requests.get(request_url, timeout=15)
+            resp = requests.get(request_url, timeout=20)
             resp.raise_for_status()
-            tracks = resp.json().get("aTracks", [])
+            data = resp.json()
+
+            # FMA API may wrap results in different keys depending on version
+            tracks = (
+                data.get("aTracks")
+                or data.get("tracks")
+                or data.get("dataset")
+                or []
+            )
 
             if not tracks:
                 logger.debug("Free Music Archive returned no results for query '%s'", query)
                 return None
 
             for track in tracks:
-                download_url = track.get("track_file") or track.get("track_url")
+                download_url = (
+                    track.get("track_file")
+                    or track.get("track_url")
+                    or track.get("audio")
+                    or track.get("url")
+                )
                 if not download_url:
                     continue
 
-                track_id = track.get("track_id", "unknown")
+                track_id = track.get("track_id") or track.get("id") or "unknown"
                 out_path = cache_dir / f"{cache_key}_fma_{track_id}.mp3"
 
-                try:
-                    with requests.get(download_url, stream=True, timeout=30) as r:
-                        r.raise_for_status()
-                        with open(out_path, "wb") as fh:
-                            for chunk in r.iter_content(chunk_size=8192):
-                                fh.write(chunk)
+                if _stream_download(download_url, out_path):
                     logger.info(
                         "Downloaded Free Music Archive track '%s' (id=%s) → %s",
-                        track.get("track_title", track_id), track_id, out_path,
+                        track.get("track_title") or track.get("name") or track_id,
+                        track_id, out_path,
                     )
                     return out_path
-                except Exception as exc:  # noqa: BLE001
-                    logger.warning("Failed to download FMA track id=%s: %s", track_id, exc)
+                logger.debug("FMA track id=%s download failed, trying next", track_id)
 
             return None
 
         except requests.HTTPError as exc:
             status = exc.response.status_code if exc.response is not None else "unknown"
-            if exc.response is not None and exc.response.status_code in _FMA_RETRY_STATUSES:
+            if exc.response is not None and exc.response.status_code in _RETRY_STATUSES:
                 wait = 2 ** attempt
                 logger.warning(
                     "Free Music Archive transient error (HTTP %s) for query '%s' — "
                     "retrying in %ds (attempt %d/%d)",
-                    status, query, wait, attempt + 1, _FMA_MAX_RETRIES,
+                    status, query, wait, attempt + 1, _MAX_RETRIES,
                 )
                 time.sleep(wait)
                 continue
@@ -354,8 +473,101 @@ def _download_from_free_music_archive(query: str, cache_dir: Path, cache_key: st
 
     logger.warning(
         "Free Music Archive search gave up after %d retries for query '%s'",
-        _FMA_MAX_RETRIES, query,
+        _MAX_RETRIES, query,
     )
+    return None
+
+
+def _download_from_ccmixter(query: str, cache_dir: Path, cache_key: str) -> Path | None:
+    """Search ccMixter for Creative Commons instrumental background music.
+
+    No API key required.  ccMixter hosts remix-friendly, Creative Commons
+    licensed instrumental tracks suitable as background music.
+
+    API reference: http://ccmixter.org/query-api-help
+
+    Args:
+        query:     Search query string.
+        cache_dir: Directory to save the downloaded file.
+        cache_key: Short hash used as part of the cached filename.
+
+    Returns:
+        Path to the downloaded MP3, or ``None`` on any failure.
+    """
+    # Extract simple keywords from the query for ccMixter tag-based search
+    keywords = " ".join(query.split()[:3])
+    # ccMixter works best with simple tags
+    tags = "instrumental"
+
+    for attempt in range(_MAX_RETRIES):
+        try:
+            resp = requests.get(
+                _CCMIXTER_API_URL,
+                params={
+                    "tags": tags,
+                    "search": keywords,
+                    "limit": 5,
+                    "type": "trackback",
+                    "format": "json",
+                    "f": "json",
+                },
+                timeout=15,
+            )
+            resp.raise_for_status()
+            tracks = resp.json()
+
+            if not isinstance(tracks, list) or not tracks:
+                logger.debug("ccMixter returned no results for tags='%s' search='%s'", tags, keywords)
+                return None
+
+            for track in tracks:
+                # ccMixter track objects expose upload.files list or a direct mp3 URL
+                files = track.get("files") or track.get("upload_files") or []
+                audio_url = None
+
+                if isinstance(files, list):
+                    for f in files:
+                        url = f.get("download_url") or f.get("file_rawname") or f.get("url")
+                        if url and any(ext in url.lower() for ext in (".mp3", ".wav", ".ogg")):
+                            audio_url = url
+                            break
+
+                # Fallback: direct link field
+                if not audio_url:
+                    audio_url = track.get("upload_extra", {}).get("mp3") or track.get("file_url")
+
+                if not audio_url:
+                    continue
+
+                upload_id = track.get("upload_id") or track.get("id") or "unknown"
+                out_path = cache_dir / f"{cache_key}_ccmixter_{upload_id}.mp3"
+
+                if _stream_download(audio_url, out_path):
+                    logger.info(
+                        "Downloaded ccMixter track '%s' (id=%s) → %s",
+                        track.get("upload_name") or upload_id, upload_id, out_path,
+                    )
+                    return out_path
+                logger.debug("ccMixter track id=%s download failed, trying next", upload_id)
+
+            return None
+
+        except requests.HTTPError as exc:
+            status = exc.response.status_code if exc.response is not None else "unknown"
+            if exc.response is not None and exc.response.status_code in _RETRY_STATUSES:
+                wait = 2 ** attempt
+                logger.warning(
+                    "ccMixter transient error (HTTP %s) — retrying in %ds (attempt %d/%d)",
+                    status, wait, attempt + 1, _MAX_RETRIES,
+                )
+                time.sleep(wait)
+                continue
+            logger.warning("ccMixter search failed: HTTP %s — %s", status, exc)
+            return None
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("ccMixter search failed for query '%s': %s", query, exc)
+            return None
+
     return None
 
 
@@ -406,23 +618,15 @@ def _download_from_freesound(query: str, cache_dir: Path, cache_key: str) -> Pat
                 continue
 
             sound_id = result.get("id", "unknown")
-            out_path = cache_dir / f"{cache_key}_{sound_id}.mp3"
+            out_path = cache_dir / f"{cache_key}_freesound_{sound_id}.mp3"
 
-            try:
-                with requests.get(preview_url, stream=True, timeout=30) as r:
-                    r.raise_for_status()
-                    with open(out_path, "wb") as fh:
-                        for chunk in r.iter_content(chunk_size=8192):
-                            fh.write(chunk)
+            if _stream_download(preview_url, out_path):
                 logger.info(
-                    "Downloaded background music '%s' (id=%s) → %s",
+                    "Downloaded Freesound background music '%s' (id=%s) → %s",
                     result.get("name", sound_id), sound_id, out_path,
                 )
                 return out_path
-            except Exception as exc:  # noqa: BLE001
-                logger.warning(
-                    "Failed to download Freesound preview for id=%s: %s", sound_id, exc
-                )
+            logger.debug("Freesound track id=%s download failed, trying next", sound_id)
 
     except Exception as exc:  # noqa: BLE001
         logger.warning("Freesound search failed for query '%s': %s", query, exc)
@@ -469,3 +673,4 @@ def _create_silence_fallback(cache_dir: Path, cache_key: str) -> Path | None:
     except Exception as exc:  # noqa: BLE001
         logger.warning("Could not create silence fallback audio: %s", exc)
         return None
+
