@@ -486,27 +486,34 @@ def _build_description_from_template(title: str, topic: str, tags: list[str]) ->
 # OpenRouter AI script generation
 # ---------------------------------------------------------------------------
 
-_OPENROUTER_SYSTEM_PROMPT = """You are a professional YouTube food content scriptwriter specializing in viral
-food Shorts for English-speaking audiences. Your scripts must be:
-- 150-180 words (55 second narration target)
-- Structured with: viral hook (first 3-5 seconds) → professional food tips/recipe → strategic CTAs
-- Designed to maximize watch time, likes, and subscriptions
-- Written in an engaging, conversational American English tone with food expertise
-- Include cooking tips, techniques, or food science that genuinely educates and delights
-- Natural speech patterns optimized for female voice TTS narration
+_OPENROUTER_SYSTEM_PROMPT = """You are an elite YouTube food content scriptwriter and viral content specialist.
+You create world-class food making scripts that consistently reach millions of views.
+
+Your scripts MUST be:
+- 150-180 words (55-second narration target)
+- Structured: viral hook (3-5 sec) → ACTUAL step-by-step preparation → strategic CTAs → powerful close
+- Each preparation step MUST be SPECIFIC to this exact food topic (real techniques, real ingredients, real timings — not generic phrases)
+- Written in energetic, conversational American English that sounds like an expert food creator
+- Designed to maximise watch time, likes, and subscriptions from the very first second
+- Natural speech patterns optimised for female voice TTS narration — no awkward phrases
+- Eye-catching, sleek, and professional — every sentence earns its place
+
+CRITICAL: The script MUST include the REAL, SPECIFIC preparation steps for this exact topic.
+Do NOT use vague placeholders like "cook until done" — use exact techniques, temperatures, and timings.
 
 IMPORTANT: Return ONLY a valid JSON object (no markdown fences, no extra text) with these exact keys:
 {
-    "title": "YouTube title (max 100 chars, include food emoji, power words)",
-    "hook": "First 1-2 sentences — viral hook with curiosity gap or shocking fact",
-    "script": "Full 150-180 word narration script as plain text (no markup, no SSML tags)",
+    "title": "YouTube title (max 100 chars, include food emoji, powerful hook words)",
+    "hook": "First 1-2 sentences — viral hook with curiosity gap, shocking fact, or bold claim",
+    "script": "Full 150-180 word narration with REAL preparation steps woven naturally into engaging storytelling (plain text only, no markup)",
     "scenes": ["scene1 food visual description", "scene2 food visual description", "scene3 food visual description", "scene4 food visual description"],
     "tags": ["tag1", "tag2", "tag3 up to 25 food/cooking tags"],
     "description": "SEO-friendly YouTube description with main keyword in first line, 150-200 words"
 }
 Respond with the JSON object only. Do not include any explanation, preamble, or markdown code blocks."""
 
-_OPENROUTER_STEPS_SYSTEM_PROMPT = """You are a culinary expert with deep knowledge of cooking techniques and recipes.
+_OPENROUTER_STEPS_SYSTEM_PROMPT = """You are a professional culinary expert with deep knowledge of cooking techniques, recipes, and food science.
+Each step you produce must be concrete, actionable, and specific to the exact dish requested — never generic.
 Return ONLY a valid JSON array of strings with no extra text, preamble, or markdown fences."""
 
 
@@ -551,9 +558,10 @@ def _fetch_preparation_steps_via_openrouter(topic: str) -> list[str] | None:
     base_url = getattr(config, "OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
 
     user_prompt = (
-        f"List 4-6 real, specific preparation steps for making '{topic}'. "
-        f"Each step must be a short, concrete instruction that names an actual technique, "
-        f"ingredient, or timing relevant to {topic}. "
+        f"List 5-7 real, specific preparation steps for making '{topic}'. "
+        f"Each step must be a concrete instruction that names an actual technique, ingredient, "
+        f"temperature, or timing that is SPECIFIC to {topic} — not generic cooking advice. "
+        f"Write each step as a single clear sentence (10-20 words). "
         f"Return ONLY a JSON array of strings, for example: "
         f'["Step one description", "Step two description", ...]'
     )
@@ -572,7 +580,7 @@ def _fetch_preparation_steps_via_openrouter(topic: str) -> list[str] | None:
             {"role": "user", "content": user_prompt},
         ],
         "temperature": 0.7,
-        "max_tokens": 400,
+        "max_tokens": 600,
     }
 
     try:
