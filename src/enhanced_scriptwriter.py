@@ -36,6 +36,7 @@ import re
 from typing import Any, TypedDict
 
 import config
+from src.realistic_steps_generator import generate_realistic_steps
 from src.scriptwriter import (
     _fetch_preparation_steps_via_openrouter,
     _strip_markdown_fences,
@@ -212,12 +213,13 @@ def _pick_ingredients(topic: str) -> list[str]:
 
 
 def _pick_steps(topic: str) -> list[str]:
-    """Return step-by-step cooking instructions for the given topic."""
-    topic_lower = topic.lower()
-    for keyword, steps in _STEP_TEMPLATES.items():
-        if keyword in topic_lower:
-            return list(steps)
-    return list(_STEP_TEMPLATES["default"])
+    """Return step-by-step cooking instructions for the given topic.
+
+    Delegates to :func:`src.realistic_steps_generator.generate_realistic_steps`
+    which analyses the topic to produce authentic, topic-specific steps rather
+    than recycling generic pre-defined templates.
+    """
+    return generate_realistic_steps(topic)
 
 
 def _estimate_timing(topic: str, num_steps: int) -> tuple[int, int, int]:
