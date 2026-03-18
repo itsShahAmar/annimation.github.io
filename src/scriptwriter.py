@@ -23,6 +23,7 @@ import time
 from typing import Any, TypedDict
 
 import config
+from src.realistic_steps_generator import generate_realistic_steps
 
 logger = logging.getLogger(__name__)
 
@@ -704,7 +705,10 @@ def _generate_script_via_openrouter(
 def _build_script_from_template(topic: str) -> ScriptData:
     """Generate a professional food script using deterministic templates.
 
-    Used as fallback when OpenRouter AI is unavailable.
+    Used as fallback when OpenRouter AI is unavailable.  The body section is
+    built from real, topic-specific preparation steps produced by
+    :func:`src.realistic_steps_generator.generate_realistic_steps` rather than
+    recycling generic placeholder text.
     """
     topic = topic.strip() or "delicious home cooking"
 
@@ -715,9 +719,17 @@ def _build_script_from_template(topic: str) -> ScriptData:
     hook_template = _pick(_HOOKS, rng)
     hook = _fill(hook_template, topic)
 
-    # 2. Body
-    body_template = _pick(_ALL_BODIES, rng)
-    body = _fill(body_template, topic)
+    # 2. Real, topic-specific preparation steps
+    steps = generate_realistic_steps(topic)
+    # Weave first 3 steps into a narrated body paragraph
+    step_lines = " ".join(
+        f"Step {i + 1}: {s}" for i, s in enumerate(steps[:3])
+    )
+    body = (
+        f"Here is exactly how to make the most incredible {topic} of your life. "
+        f"{step_lines} "
+        f"Follow these steps and you will get perfect results every single time."
+    )
 
     # 3. CTAs — sprinkled through the script
     cta_early = _pick(_CTA_EARLY, rng)
