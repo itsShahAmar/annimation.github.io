@@ -2,6 +2,15 @@
 
 import os
 
+
+def _env_flag(name: str, default: bool) -> bool:
+    """Parse a boolean environment flag with common truthy/falsey values."""
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
 # API Keys (loaded from GitHub Secrets / environment variables)
 YOUTUBE_CLIENT_SECRET_JSON: str | None = os.getenv("YOUTUBE_CLIENT_SECRET")  # JSON string of OAuth2 client secret
 YOUTUBE_TOKEN_JSON: str | None = os.getenv("YOUTUBE_TOKEN")  # JSON string of OAuth2 token
@@ -104,12 +113,13 @@ SUBTITLE_END_BUFFER: float = 0.4      # seconds of padding at the end; prevents 
 # ---------------------------------------------------------------------------
 # Video encoding quality — high-bitrate for crisp 1080 × 1920 Shorts
 # ---------------------------------------------------------------------------
-VIDEO_PRESET: str = "slow"
-VIDEO_BITRATE: str = "16000k"          # raised from 12000k for sharper quality
-AUDIO_BITRATE: str = "320k"            # raised from 256k for cleaner audio
+VIDEO_FAST_RENDER: bool = _env_flag("VIDEO_FAST_RENDER", _env_flag("CI", False))
+VIDEO_PRESET: str = os.getenv("VIDEO_PRESET", "veryfast" if VIDEO_FAST_RENDER else "slow")
+VIDEO_BITRATE: str = os.getenv("VIDEO_BITRATE", "8000k" if VIDEO_FAST_RENDER else "16000k")
+AUDIO_BITRATE: str = os.getenv("AUDIO_BITRATE", "192k" if VIDEO_FAST_RENDER else "320k")
 VIDEO_TRANSITION_DURATION: float = 0.35
 VIDEO_VIGNETTE: bool = True            # cinematic dark-edge vignette overlay
-VIDEO_COLOR_GRADE: bool = True         # vibrant, saturated colour grade for food appeal
+VIDEO_COLOR_GRADE: bool = _env_flag("VIDEO_COLOR_GRADE", not VIDEO_FAST_RENDER)
 VIDEO_CLIP_RANDOM_START: bool = True   # random clip start for visual variety per run
 
 # ---------------------------------------------------------------------------
