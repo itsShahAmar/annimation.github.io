@@ -6,7 +6,9 @@ Generates professional, engaging food-making scripts via the OpenRouter AI API
 when the API key is unavailable, ensuring the pipeline always produces output.
 
 Scripts include:
-- Viral hooks designed for the first 3-5 seconds (curiosity gaps, pattern interrupts)
+- Emotionally-driven hooks designed for the first 3-5 seconds, targeting US
+  audiences aged 20-34 (both male and female) with relatable life moments,
+  nostalgia, pride, and personal connection
 - Professional step-by-step food narration with personality
 - Strategically placed CTAs at 25%, 50%, 75%, and 95% of the script
 - Food-specific tags (15-30) optimised for cooking/recipe YouTube searches
@@ -45,59 +47,65 @@ class ScriptData(TypedDict):
 
 
 # ---------------------------------------------------------------------------
-# Food Hook Templates — attention-grabbing intros for the first 3-5 seconds
+# Food Hook Templates — emotionally-driven intros for the first 3-5 seconds
+# Designed for US audience aged 20-34 (male and female): relatable life
+# moments, nostalgia, pride, FOMO, and personal connection drive engagement.
 # ---------------------------------------------------------------------------
 _HOOKS: list[str] = [
+    # Emotional nostalgia / comfort hooks (US 20-34 audience)
+    "I made this {topic} and it literally tasted like my childhood — I had to call my mom.",
+    "This {topic} recipe hits different when you make it yourself for the first time.",
+    "Every time I make this {topic} I feel like I finally have my life together.",
+    "This is the {topic} recipe that made me realize I actually love cooking.",
+    "The first time I made this {topic} my whole apartment smelled incredible and I cried.",
+    "I grew up eating {topic} and this homemade version is better than any memory I have.",
+    # Pride and achievement hooks (US 20-34 audience)
+    "Nobody believes I made this {topic} from scratch — but I did and you can too.",
+    "My friends thought I ordered this {topic} from a restaurant — nope, I made it myself.",
+    "I made this {topic} for my partner and they looked at me completely differently after.",
+    "This is the {topic} that made my whole friend group think I went to culinary school.",
+    "I brought this {topic} to a potluck and left with zero leftovers and twelve recipe requests.",
+    "Making this {topic} felt like unlocking a superpower I did not know I had.",
+    # Relatable adulting / first apartment hooks (US 20-34 audience)
+    "When you are broke but still want incredible {topic} — this recipe is for you.",
+    "This {topic} recipe saved me when I was too stressed to think but too hungry to order delivery.",
+    "I spent my twenties ordering {topic} from delivery apps until I discovered this method.",
+    "Adulting is hard but making perfect {topic} at home does not have to be.",
+    "This is the {topic} recipe I needed when I first moved out and did not know how to cook.",
+    "Forget overpriced takeout — this {topic} is cheaper, faster, and so much better.",
+    # FOMO and social sharing hooks (US 20-34 audience)
+    "Everyone on my feed is making this {topic} and now I understand why — it is insane.",
+    "Your friends have already tried this {topic} trick and that is why their food tastes better.",
+    "This {topic} video is the one everyone is sharing right now and you need to see why.",
+    "If your {topic} does not look like this yet, you are missing the one step that changes everything.",
+    # Emotional connection / relationship hooks (US 20-34 audience)
+    "I made this {topic} for my family and it reminded all of us why home cooking matters.",
+    "The first time someone you love says your {topic} is the best they have ever had — unforgettable.",
+    "Cooking this {topic} is the closest thing I have to a self-care routine that actually works.",
+    "This {topic} is my love language and after you try it, it might become yours too.",
     # Curiosity gap hooks
     "This one trick will make your {topic} taste like it came from a five-star restaurant.",
     "Wait until you see what happens when you add this one secret ingredient to your {topic}.",
     "Chefs have been hiding this {topic} technique for years — until now.",
     "You have been making {topic} wrong your entire life and here is the proof.",
-    "I cannot believe how easy it is to make restaurant-quality {topic} at home.",
-    "The reason your {topic} never tastes as good as the restaurant version finally explained.",
-    "Stop wasting money at restaurants — this {topic} recipe changes everything.",
     "Nobody told me that {topic} could be this simple until I found this technique.",
     # Pattern interrupt hooks
     "Forget everything you know about making {topic} — this method is completely different.",
     "Three ingredients. Ten minutes. The most incredible {topic} you have ever tasted.",
     "What if I told you that the secret to perfect {topic} is already in your kitchen right now.",
-    "Your grandma was right about {topic} and here is the science that proves it.",
-    "The most viral {topic} recipe on the internet and I finally understand why.",
     "I tried every method and this is the only {topic} technique that actually works.",
-    # Emotional trigger hooks
-    "This {topic} recipe will make your family think you went to culinary school.",
-    "The {topic} recipe that made my guests think I hired a personal chef.",
-    "If comfort food had a name it would be this {topic} recipe right here.",
-    "Making {topic} at home is so much better than ordering it — and I will prove it.",
-    "This is the {topic} recipe I wish someone had taught me ten years ago.",
-    "Once you try this {topic} method you will never go back to the old way.",
     # How-to viral hooks
     "Here is the fastest way to make perfect {topic} every single time.",
     "Five minutes and five ingredients are all you need for this incredible {topic}.",
     "The one step everyone skips that makes {topic} taste infinitely better.",
-    "How professional chefs make {topic} and why it always tastes so much better.",
-    "The science behind why this {topic} technique works better than everything else.",
     # Number-based viral hooks
-    "Five ingredients, zero cooking skills needed, perfect {topic} every time.",
     "Three common mistakes that are ruining your {topic} and how to fix them right now.",
-    "Ten seconds of prep time changes your {topic} from good to absolutely incredible.",
-    "The two-ingredient upgrade that makes any {topic} taste gourmet instantly.",
     "Only four steps stand between you and the best {topic} you have ever made.",
     # South Asian cuisine hooks
     "This {topic} technique will make your family think you flew in a chef from Lahore.",
     "The spice ratio Pakistani grandmothers swear by for the perfect {topic}.",
-    "Why your {topic} never tastes like the dhaba version — and the exact fix.",
-    "This is the Afghan secret that transforms ordinary {topic} into something magical.",
-    "One marinade, one technique — and your {topic} will taste like a Kabul street stall.",
     "Indian grandmothers have been using this {topic} trick for generations and it still works.",
-    "The dum cooking method that makes {topic} taste like it simmered all day.",
-    "Street food vendors in Delhi use this one trick to make {topic} irresistible.",
-    "This is the tandoor secret that makes restaurant {topic} taste so much better at home.",
-    "Three spices is all you need to make your {topic} taste authentically South Asian.",
     "The layering technique that takes {topic} from bland to absolutely unforgettable.",
-    "Why soaking makes all the difference when it comes to perfect {topic}.",
-    "Your {topic} is missing this one ingredient that every Pakistani cook knows.",
-    "How to build the deep flavor base that makes Indian {topic} so addictive.",
     "This slow-cooked {topic} method has been passed down for hundreds of years.",
 ]
 
@@ -217,21 +225,29 @@ _ALL_BODIES: list[str] = (
 
 # ---------------------------------------------------------------------------
 # CTA Templates — placed strategically throughout the script
+# Emotionally-driven for US audience 20-34: personal connection, community,
+# and relatable moments that encourage action.
 # ---------------------------------------------------------------------------
 _CTA_EARLY: list[str] = [  # ~25% mark — like CTA
     "Hit like if this is already blowing your mind.",
     "Tap the like button if you are taking notes right now.",
     "Give this a like — this technique deserves it.",
+    "If this is already making you feel something, hit that like button.",
+    "Like this if you have been cooking it wrong your whole life.",
 ]
 _CTA_MID: list[str] = [  # ~50% mark — subscribe CTA
     "Subscribe so you never miss a recipe like this.",
     "Follow for more professional kitchen secrets like this one.",
     "Subscribe because there is so much more where this came from.",
+    "Follow along — I am teaching everything I wish I knew in my early twenties.",
+    "Subscribe if you want to actually become someone who can cook incredible food.",
 ]
 _CTA_LATE: list[str] = [  # ~75% mark — comment CTA
     "Comment below what dish you want me to master next.",
     "Let me know in the comments if you tried this technique.",
     "Drop a comment with your results — I read every single one.",
+    "Tell me in the comments — what is the one dish you have always been too scared to make?",
+    "Comment if you are making this tonight — I want to know how it turns out for you.",
 ]
 _PUNCHLINES: list[str] = [  # Near end — share CTA
     "Share this with someone who loves food as much as you do and follow for daily recipes.",
@@ -239,6 +255,8 @@ _PUNCHLINES: list[str] = [  # Near end — share CTA
     "Follow for more recipes that change how you cook forever, and share this with your foodie friends.",
     "Tag the person you are going to cook this for and subscribe for more food secrets.",
     "Share this with someone who thinks cooking is too complicated — this proves otherwise.",
+    "Send this to a friend who needs this in their life right now — you know exactly who.",
+    "Tag someone you want to cook this for — because food is always better when you share it.",
 ]
 
 # ---------------------------------------------------------------------------
@@ -488,18 +506,31 @@ def _build_description_from_template(title: str, topic: str, tags: list[str]) ->
 # ---------------------------------------------------------------------------
 
 _OPENROUTER_SYSTEM_PROMPT = """You are a professional YouTube food content scriptwriter specializing in viral
-food Shorts for English-speaking audiences. Your scripts must be:
+food Shorts for US audiences aged 20-34 (both male and female). Your scripts must be:
 - 150-180 words (55 second narration target)
-- Structured with: viral hook (first 3-5 seconds) → professional food tips/recipe → strategic CTAs
-- Designed to maximize watch time, likes, and subscriptions
-- Written in an engaging, conversational American English tone with food expertise
+- Structured with: emotional hook (first 3-5 seconds) → professional food tips/recipe → strategic CTAs
+- Designed to maximize watch time, likes, shares, and subscriptions
+- Written in an engaging, conversational American English tone with warmth, personality, and genuine emotion
+- The hook MUST be emotionally resonant — targeting relatable life moments for 20-34 year olds:
+  pride in cooking for the first time, nostalgia, impressing friends or a partner, adulting struggles,
+  budget-friendly wins, self-care through cooking, or FOMO-driven social moments
 - Include cooking tips, techniques, or food science that genuinely educates and delights
 - Natural speech patterns optimized for female voice TTS narration
+- Use "I" perspective and first-person storytelling to create authentic emotional connection
+
+TARGET AUDIENCE EMOTIONAL TRIGGERS (use at least one in the hook):
+• First apartment cooking (adulting pride, learning independence)
+• Impressing a partner, date, or friends with homemade food
+• Nostalgia (childhood flavors, family recipes, comfort food memories)
+• Budget wins (broke but eating well, skipping overpriced delivery)
+• Personal achievement ("I made this from scratch")
+• Social FOMO ("everyone is making this")
+• Self-care and stress relief through cooking
 
 IMPORTANT: Return ONLY a valid JSON object (no markdown fences, no extra text) with these exact keys:
 {
-    "title": "YouTube title (max 100 chars, include food emoji, power words)",
-    "hook": "First 1-2 sentences — viral hook with curiosity gap or shocking fact",
+    "title": "YouTube title (max 100 chars, include food emoji, emotional or power words)",
+    "hook": "First 1-2 sentences — emotionally resonant hook connecting to the 20-34 US audience experience",
     "script": "Full 150-180 word narration script as plain text (no markup, no SSML tags)",
     "scenes": ["scene1 food visual description", "scene2 food visual description", "scene3 food visual description", "scene4 food visual description"],
     "tags": ["tag1", "tag2", "tag3 up to 25 food/cooking tags"],

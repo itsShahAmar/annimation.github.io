@@ -144,9 +144,17 @@ _PATTERN_INTERRUPT_PHRASES: frozenset[str] = frozenset({
 })
 
 _EMOTIONAL_TRIGGER_PHRASES: frozenset[str] = frozenset({
+    # Classic emotional triggers
     "family", "grandma", "memories", "childhood", "love", "comfort",
     "incredible", "amazing", "life changing", "never go back", "obsessed",
     "addicted", "mind-blowing", "crying", "blown away",
+    # US 20-34 audience emotional triggers
+    "called my mom", "first time", "my whole life", "finally have", "actually love",
+    "made me realize", "have always wanted", "wish i knew", "nobody believes",
+    "my friends thought", "my partner", "potluck", "moved out", "first apartment",
+    "broke but", "too stressed", "ordering delivery", "adulting", "level up",
+    "superpower", "unlocked", "everyone is making", "entire life", "hits different",
+    "self-care", "love language", "cook this for", "share it",
 })
 
 _CTA_VERBS: frozenset[str] = frozenset({
@@ -179,10 +187,13 @@ def _analyse_hook_strength(hook: str, script: str) -> FactorScore:
     interrupt_hits = sum(1 for p in _PATTERN_INTERRUPT_PHRASES if p in text)
     emotion_hits = sum(1 for p in _EMOTIONAL_TRIGGER_PHRASES if p in text)
 
-    # Score: each category contributes up to 1/3
-    curiosity_score = min(curiosity_hits / 2, 1.0) * 0.4
-    interrupt_score = min(interrupt_hits / 1, 1.0) * 0.3
-    emotion_score = min(emotion_hits / 2, 1.0) * 0.3
+    # Score: emotion weighted highest (0.5) to prioritise the emotional hook
+    # strategy targeting US 20-34 audience; curiosity (0.3) and interrupt (0.2)
+    # are secondary signals. Weights are intentionally < 1.0 total so that the
+    # listicle and question bonuses below can push the score above the base sum.
+    curiosity_score = min(curiosity_hits / 2, 1.0) * 0.3
+    interrupt_score = min(interrupt_hits / 1, 1.0) * 0.2
+    emotion_score = min(emotion_hits / 2, 1.0) * 0.5
     total = curiosity_score + interrupt_score + emotion_score
 
     # Bonus: hook opens with a number (listicle pattern is highly viral)
@@ -199,7 +210,10 @@ def _analyse_hook_strength(hook: str, script: str) -> FactorScore:
     if interrupt_hits == 0:
         suggestions.append("Open with a pattern interrupt phrase (e.g. 'Stop', 'Forget everything you know about…').")
     if emotion_hits == 0:
-        suggestions.append("Include an emotional trigger to build viewer connection.")
+        suggestions.append(
+            "Add an emotional trigger for US 20-34 audience (e.g. 'called my mom', 'my partner', "
+            "'first apartment', 'hits different', 'love language', 'adulting', 'everyone is making this')."
+        )
 
     return FactorScore(
         name="Hook Strength",
