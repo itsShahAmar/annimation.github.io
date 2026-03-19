@@ -92,6 +92,23 @@ class TestGenerateScript(unittest.TestCase):
         has_cta = any(word in script for word in ["subscribe", "follow", "like"])
         self.assertTrue(has_cta, "Script must contain a subscribe/follow CTA")
 
+    def test_script_contains_multiple_cta_types(self):
+        """Script should include both engagement and conversion CTAs."""
+        result = self.generate_script("weeknight pasta")
+        script = result["script"].lower()
+        self.assertTrue(any(word in script for word in ["like", "tap the like"]),
+                        "Expected a like-style CTA in script")
+        self.assertTrue(any(word in script for word in ["subscribe", "follow"]),
+                        "Expected a subscribe/follow CTA in script")
+        self.assertTrue(any(word in script for word in ["comment", "share", "save", "tag"]),
+                        "Expected a comment/share-style CTA in script")
+
+    def test_template_script_word_count_stays_shorts_friendly(self):
+        """Template scripts should stay concise for sub-60-second Shorts pacing."""
+        from src import scriptwriter as sw
+        result = sw._build_script_from_template("crispy chicken sandwich")
+        self.assertLessEqual(len(result["script"].split()), sw._MAX_WORDS)
+
     def test_tags_is_list_of_strings(self):
         result = self.generate_script("salmon recipe")
         tags = result["tags"]

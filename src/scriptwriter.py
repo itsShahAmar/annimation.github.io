@@ -30,8 +30,8 @@ from src.realistic_steps_generator import generate_realistic_steps
 logger = logging.getLogger(__name__)
 
 # Minimum / maximum acceptable word counts for the narration script
-_MIN_WORDS = 70
-_MAX_WORDS = 200
+_MIN_WORDS = 65
+_MAX_WORDS = 155
 
 
 class ScriptData(TypedDict):
@@ -83,6 +83,8 @@ _HOOKS: list[str] = [
     "The first time someone you love says your {topic} is the best they have ever had — unforgettable.",
     "Cooking this {topic} is the closest thing I have to a self-care routine that actually works.",
     "This {topic} is my love language and after you try it, it might become yours too.",
+    "I made this {topic} after the hardest week of my life and it honestly felt like a reset.",
+    "I cooked this {topic} for someone I love and that first bite is a core memory now.",
     # Curiosity gap hooks
     "This one trick will make your {topic} taste like it came from a five-star restaurant.",
     "Wait until you see what happens when you add this one secret ingredient to your {topic}.",
@@ -507,7 +509,7 @@ def _build_description_from_template(title: str, topic: str, tags: list[str]) ->
 
 _OPENROUTER_SYSTEM_PROMPT = """You are a professional YouTube food content scriptwriter specializing in viral
 food Shorts for US audiences aged 20-34 (both male and female). Your scripts must be:
-- 150-180 words (55 second narration target)
+- 120-145 words (must stay under 60 seconds of narration)
 - Structured with: emotional hook (first 3-5 seconds) → professional food tips/recipe → strategic CTAs
 - Designed to maximize watch time, likes, shares, and subscriptions
 - Written in an engaging, conversational American English tone with warmth, personality, and genuine emotion
@@ -775,11 +777,18 @@ def _build_script_from_template(topic: str) -> ScriptData:
 
     # 3. CTAs — sprinkled through the script
     cta_early = _pick(_CTA_EARLY, rng)
+    cta_mid = _pick(_CTA_MID, rng)
     cta_late = _pick(_CTA_LATE, rng)
     punchline = _fill(_pick(_PUNCHLINES, rng), topic)
 
-    # 4. Full script with CTAs at strategic positions
-    script_parts = [hook, cta_early, body, cta_late, punchline]
+    # 4. Full script with CTAs at strategic positions.
+    # Keep CTA sections guaranteed by trimming only the body when needed.
+    fixed_parts = [hook, cta_early, cta_mid, cta_late, punchline]
+    fixed_words = sum(len(part.split()) for part in fixed_parts)
+    body_words = body.split()
+    allowed_body_words = max(12, _MAX_WORDS - fixed_words)
+    body_trimmed = " ".join(body_words[:allowed_body_words]).strip()
+    script_parts = [hook, cta_early, body_trimmed, cta_mid, cta_late, punchline]
     script = " ".join(script_parts)
 
     # Trim if too long while preserving sentence boundaries
