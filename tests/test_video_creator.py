@@ -76,3 +76,22 @@ class TestFitBgAudioToDuration(unittest.TestCase):
         clip.fx.assert_not_called()
         clip.subclip.assert_not_called()
 
+
+class TestResolveTargetDuration(unittest.TestCase):
+    """Tests for src.video_creator._resolve_target_duration()."""
+
+    def setUp(self):
+        import src.video_creator as vc
+        self.vc = vc
+
+    def test_uses_requested_audio_duration_when_positive(self):
+        result = self.vc._resolve_target_duration(30.0, 55.0, None)
+        self.assertEqual(result, 30.0)
+
+    def test_uses_default_when_requested_duration_invalid(self):
+        result = self.vc._resolve_target_duration(0.0, 55.0, None)
+        self.assertEqual(result, 55.0)
+
+    def test_prefers_measured_tts_duration_when_longer(self):
+        result = self.vc._resolve_target_duration(30.0, 55.0, 62.5)
+        self.assertEqual(result, 62.5)

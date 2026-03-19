@@ -87,6 +87,18 @@ def _fit_bg_audio_to_duration(bg_audio: Any, target_duration: float, afx: Any) -
     return bg_audio
 
 
+def _resolve_target_duration(
+    requested_audio_duration: float,
+    default_duration: float,
+    measured_tts_duration: float | None,
+) -> float:
+    """Resolve final video duration so narration is never cut short."""
+    resolved = requested_audio_duration if requested_audio_duration > 0 else default_duration
+    if measured_tts_duration and measured_tts_duration > 0:
+        resolved = max(resolved, measured_tts_duration)
+    return resolved
+
+
 def _pexels_headers() -> dict[str, str]:
     """Return the Pexels API authorisation header."""
     if not config.PEXELS_API_KEY:
@@ -487,7 +499,14 @@ def _build_caption_clips(script_text: str, total_duration: float, video_w: int, 
     glow_color_hex = getattr(config, "SUBTITLE_GLOW_COLOR", "#FFD700")
     glow_radius    = getattr(config, "SUBTITLE_GLOW_RADIUS", 18)
     all_caps       = getattr(config, "SUBTITLE_ALL_CAPS", True)
-    font_name      = getattr(config, "SUBTITLE_FONT", "Liberation-Sans-Bold")
+    font_fallbacks = [getattr(config, "SUBTITLE_FONT", "Liberation-Sans-Bold")]
+    font_fallbacks.extend(getattr(config, "SUBTITLE_FONT_FALLBACKS", []))
+    seen_fonts: set[str] = set()
+    ordered_fonts: list[str] = []
+    for f in font_fallbacks:
+        if f and f not in seen_fonts:
+            ordered_fonts.append(f)
+            seen_fonts.add(f)
     stroke_w       = getattr(config, "SUBTITLE_STROKE_WIDTH", 6)
     base_font_size = getattr(config, "SUBTITLE_FONT_SIZE", 92)
 
@@ -507,17 +526,29 @@ def _build_caption_clips(script_text: str, total_duration: float, video_w: int, 
         )
 
         try:
-            txt_clip = TextClip(
-                display_text,
-                fontsize=font_size,
-                font=font_name,
-                color=color,
-                stroke_color="black",
-                stroke_width=stroke_w,
-                method="caption",
-                size=(video_w - 120, None),
-                align="center",
-            )
+            txt_clip = None
+            chosen_font: str | None = None
+            last_font_exc: Exception | None = None
+            for font_name in ordered_fonts:
+                try:
+                    txt_clip = TextClip(
+                        display_text,
+                        fontsize=font_size,
+                        font=font_name,
+                        color=color,
+                        stroke_color="black",
+                        stroke_width=stroke_w,
+                        method="caption",
+                        size=(video_w - 120, None),
+                        align="center",
+                    )
+                    chosen_font = font_name
+                    break
+                except Exception as exc:  # noqa: BLE001
+                    last_font_exc = exc
+            if txt_clip is None:
+                logger.warning("Caption clip %d skipped: no usable subtitle font (%s)", i, last_font_exc)
+                continue
             txt_w, txt_h = txt_clip.size
             pad_x, pad_y = 36, 20
 
@@ -551,7 +582,7 @@ def _build_caption_clips(script_text: str, total_duration: float, video_w: int, 
                 TextClip(
                     display_text,
                     fontsize=font_size,
-                    font=font_name,
+                    font=chosen_font,
                     color="#000000",
                     stroke_color="#000000",
                     stroke_width=stroke_w + 2,
@@ -630,6 +661,7 @@ def create_video(
             VideoFileClip,
             afx,
             concatenate_videoclips,
+            vfx,
         )
     except ImportError as exc:
         raise RuntimeError("moviepy is not installed") from exc
@@ -645,7 +677,7 @@ def create_video(
     # 1. Fetch food-themed stock footage for each scene
     # ------------------------------------------------------------------
         time_per_scene = target_duration / max(len(scenes), 1)
-        for scene in scenes:
+        for scene_idx, scene in enumerate(scenes):
             clip_added = False
 
             video_urls = _search_pexels_video(scene, per_page=5)
@@ -706,7 +738,7 @@ def create_video(
                         duration=scene_dur,
                         width=w,
                         height=h,
-                        scene_index=scenes.index(scene) if scene in scenes else 0,
+                        scene_index=scene_idx,
                     )
                     if alt_path and alt_path.suffix.lower() == ".mp4":
                         downloaded.append(alt_path)
@@ -751,6 +783,17 @@ def create_video(
         # 3. Overlay TTS audio (mixed with optional background music)
         # ------------------------------------------------------------------
         tts_audio = AudioFileClip(str(audio_path))
+        target_duration = _resolve_target_duration(
+            requested_audio_duration=audio_duration,
+            default_duration=config.VIDEO_DURATION_TARGET,
+            measured_tts_duration=getattr(tts_audio, "duration", None),
+        )
+
+        if base.duration < target_duration:
+            freeze_duration = target_duration - base.duration
+            base = base.fx(vfx.freeze, t=max(base.duration - 0.05, 0), freeze_duration=freeze_duration)
+        elif base.duration > target_duration:
+            base = base.subclip(0, target_duration)
 
         # Prefer dynamically-supplied music_path; fall back to static BG_MUSIC_PATH
         effective_music_path = music_path if music_path is not None else Path(config.BG_MUSIC_PATH)
