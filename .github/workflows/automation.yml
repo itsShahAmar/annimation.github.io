@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: funny-animation-shorts
+  group: automation-${{ github.ref }}
   cancel-in-progress: true  # Cancel stale runs so only the latest execution continues
 
 jobs:
@@ -29,13 +29,8 @@ jobs:
 
       - name: Install system dependencies
         run: |
-          if command -v ffmpeg >/dev/null 2>&1 && command -v convert >/dev/null 2>&1 && \
-             command -v fc-list >/dev/null 2>&1 && fc-list | grep -qi "Liberation Sans"; then
-            echo "System dependencies already available; skipping apt install."
-          else
-            sudo apt-get update
-            sudo apt-get install -y ffmpeg imagemagick fonts-liberation
-          fi
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg imagemagick fonts-liberation
 
       - name: Fix ImageMagick security policy for MoviePy text rendering
         run: |
