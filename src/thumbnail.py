@@ -191,6 +191,16 @@ def _topic_emoji(topic: str) -> str:
     return _DEFAULT_FOOD_EMOJIS[seed % len(_DEFAULT_FOOD_EMOJIS)]
 
 
+def _truncate_title_lines(lines: list[str], max_lines: int = 3) -> list[str]:
+    """Limit title lines and append ellipsis when truncation happens."""
+    if len(lines) <= max_lines:
+        return lines
+    truncated = lines[:max_lines]
+    if not truncated[-1].endswith("..."):
+        truncated[-1] = f"{truncated[-1]}..."
+    return truncated
+
+
 def create_thumbnail(title: str, topic: str) -> Path:
     """Generate a 1280 × 720 JPEG food content thumbnail for the given video *title*.
 
@@ -267,11 +277,24 @@ def create_thumbnail(title: str, topic: str) -> Path:
     except Exception:  # noqa: BLE001
         pass
 
+    # Readability overlay — cinematic dark glass behind title zone
+    title_overlay = Image.new("RGBA", (THUMB_W, THUMB_H), (0, 0, 0, 0))
+    ov_draw = ImageDraw.Draw(title_overlay)
+    ov_draw.rounded_rectangle(
+        [(30, 130), (THUMB_W - 30, THUMB_H - 115)],
+        radius=36,
+        fill=(0, 0, 0, 95),
+    )
+    title_overlay = title_overlay.filter(ImageFilter.GaussianBlur(radius=6))
+    img = Image.alpha_composite(img.convert("RGBA"), title_overlay).convert("RGB")
+    draw = ImageDraw.Draw(img)
+
     # Title text — bold, white, large, centred
     title_upper = title.upper()
     title_font = _load_font(100)
     max_text_w = THUMB_W - 120
     lines = _wrap_text(title_upper, title_font, max_text_w)
+    lines = _truncate_title_lines(lines, max_lines=3)
     line_height = 120
     total_text_h = len(lines) * line_height
     start_y = max(170, (THUMB_H - total_text_h) // 2 - 10)

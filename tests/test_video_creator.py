@@ -76,3 +76,69 @@ class TestFitBgAudioToDuration(unittest.TestCase):
         clip.fx.assert_not_called()
         clip.subclip.assert_not_called()
 
+
+class TestResolveTargetDuration(unittest.TestCase):
+    """Tests for src.video_creator._resolve_target_duration()."""
+
+    def setUp(self):
+        import src.video_creator as vc
+        self.vc = vc
+
+    def test_uses_requested_audio_duration_when_positive(self):
+        result = self.vc._resolve_target_duration(30.0, 55.0, None)
+        self.assertEqual(result, 30.0)
+
+    def test_uses_default_when_requested_duration_invalid(self):
+        result = self.vc._resolve_target_duration(0.0, 55.0, None)
+        self.assertEqual(result, 55.0)
+
+    def test_prefers_measured_tts_duration_when_longer(self):
+        result = self.vc._resolve_target_duration(30.0, 55.0, 62.5)
+        self.assertEqual(result, 62.5)
+
+
+class TestFitBaseVideoDuration(unittest.TestCase):
+    """Tests for src.video_creator._fit_base_video_duration()."""
+
+    def setUp(self):
+        import src.video_creator as vc
+        self.vc = vc
+
+    def test_freezes_when_base_is_shorter_than_target(self):
+        base = MagicMock()
+        base.duration = 8.0
+        frozen = MagicMock()
+        base.fx.return_value = frozen
+        vfx = MagicMock()
+        vfx.freeze = object()
+
+        result = self.vc._fit_base_video_duration(base, 10.0, vfx)
+
+        self.assertIs(result, frozen)
+        base.fx.assert_called_once_with(vfx.freeze, t=7.95, freeze_duration=2.0)
+        base.subclip.assert_not_called()
+
+    def test_trims_when_base_is_longer_than_target(self):
+        base = MagicMock()
+        base.duration = 12.0
+        trimmed = MagicMock()
+        base.subclip.return_value = trimmed
+        vfx = MagicMock()
+
+        result = self.vc._fit_base_video_duration(base, 10.0, vfx)
+
+        self.assertIs(result, trimmed)
+        base.subclip.assert_called_once_with(0, 10.0)
+        base.fx.assert_not_called()
+
+    def test_returns_same_base_when_duration_matches_target(self):
+        base = MagicMock()
+        base.duration = 10.0
+        vfx = MagicMock()
+
+        result = self.vc._fit_base_video_duration(base, 10.0, vfx)
+
+        self.assertIs(result, base)
+        base.fx.assert_not_called()
+        base.subclip.assert_not_called()
+
