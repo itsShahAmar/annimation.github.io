@@ -32,6 +32,7 @@ logger = logging.getLogger(__name__)
 # Minimum / maximum acceptable word counts for the narration script
 _MIN_WORDS = 65
 _MAX_WORDS = 155
+_MIN_TEMPLATE_BODY_WORDS = 12  # keep enough concrete cooking instruction when trimming for Shorts
 
 
 class ScriptData(TypedDict):
@@ -509,7 +510,7 @@ def _build_description_from_template(title: str, topic: str, tags: list[str]) ->
 
 _OPENROUTER_SYSTEM_PROMPT = """You are a professional YouTube food content scriptwriter specializing in viral
 food Shorts for US audiences aged 20-34 (both male and female). Your scripts must be:
-- 120-145 words (must stay under 60 seconds of narration)
+- 120-155 words (must stay under 60 seconds of narration)
 - Structured with: emotional hook (first 3-5 seconds) → professional food tips/recipe → strategic CTAs
 - Designed to maximize watch time, likes, shares, and subscriptions
 - Written in an engaging, conversational American English tone with warmth, personality, and genuine emotion
@@ -785,8 +786,30 @@ def _build_script_from_template(topic: str) -> ScriptData:
     # Keep CTA sections guaranteed by trimming only the body when needed.
     fixed_parts = [hook, cta_early, cta_mid, cta_late, punchline]
     fixed_words = sum(len(part.split()) for part in fixed_parts)
+    if fixed_words >= _MAX_WORDS:
+        trimmed_fixed = " ".join(" ".join(fixed_parts).split()[:_MAX_WORDS])
+        for punct in (".", "!", "?"):
+            idx = trimmed_fixed.rfind(punct)
+            if idx > len(trimmed_fixed) // 2:
+                trimmed_fixed = trimmed_fixed[: idx + 1]
+                break
+        script = trimmed_fixed
+        caption_script = re.sub(r"\s+", " ", script).strip()
+        scenes = _build_scenes(rng)
+        tags = _build_tags(topic, rng)
+        title = _build_title(topic, rng)
+        description = _build_description(title, topic, tags)
+        return ScriptData(
+            title=title,
+            script=script,
+            caption_script=caption_script,
+            hook=hook,
+            scenes=scenes,
+            tags=tags,
+            description=description,
+        )
     body_words = body.split()
-    allowed_body_words = max(12, _MAX_WORDS - fixed_words)
+    allowed_body_words = max(_MIN_TEMPLATE_BODY_WORDS, _MAX_WORDS - fixed_words)
     body_trimmed = " ".join(body_words[:allowed_body_words]).strip()
     script_parts = [hook, cta_early, body_trimmed, cta_mid, cta_late, punchline]
     script = " ".join(script_parts)

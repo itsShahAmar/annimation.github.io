@@ -66,6 +66,9 @@ _FOOD_FALLBACK_QUERIES = [
     "baking bread oven",
 ]
 
+_MIN_ABSOLUTE_CLIP_DURATION = 0.75
+_DEFAULT_FALLBACK_SCENE = "Food preparation close-up in kitchen"
+
 
 def _fit_bg_audio_to_duration(bg_audio: Any, target_duration: float, afx: Any) -> Any:
     """Return background audio safely fitted to target duration.
@@ -111,14 +114,20 @@ def _fit_base_video_duration(base: Any, target_duration: float, vfx: Any) -> Any
 
 def _resolve_shot_duration_window(target_duration: float, scene_count: int) -> tuple[float, float]:
     """Resolve per-shot duration bounds with sensible floor/ceiling limits."""
-    min_clip = max(0.75, float(getattr(config, "VIDEO_CLIP_MIN_DURATION", 2.0)))
+    min_clip = max(_MIN_ABSOLUTE_CLIP_DURATION, float(getattr(config, "VIDEO_CLIP_MIN_DURATION", 2.0)))
     max_clip = max(min_clip, float(getattr(config, "VIDEO_CLIP_MAX_DURATION", 3.0)))
     if target_duration <= 0 or scene_count <= 0:
         return min_clip, max_clip
 
     average = target_duration / scene_count
-    adaptive = max(0.75, min(average, max_clip))
+    adaptive = max(_MIN_ABSOLUTE_CLIP_DURATION, min(average, max_clip))
     return min(min_clip, adaptive), max(min_clip, adaptive)
+
+
+def _clamp_short_duration(duration: float) -> float:
+    """Clamp duration to configured sub-60-second Shorts maximum."""
+    max_duration = float(getattr(config, "VIDEO_MAX_DURATION_SECONDS", 59.0))
+    return min(duration, max_duration)
 
 
 def _plan_scene_shots(
@@ -128,9 +137,9 @@ def _plan_scene_shots(
     clip_max_dur: float,
 ) -> list[tuple[str, float]]:
     """Build a scene shot plan that maintains frequent 2-3 second visual cuts."""
-    scene_pool = scenes if scenes else ["Food preparation close-up in kitchen"]
-    avg_dur = max(0.75, (clip_min_dur + clip_max_dur) / 2)
-    shot_count = max(1, math.ceil(max(target_duration, avg_dur) / avg_dur))
+    scene_pool = scenes if scenes else [_DEFAULT_FALLBACK_SCENE]
+    avg_dur = max(_MIN_ABSOLUTE_CLIP_DURATION, (clip_min_dur + clip_max_dur) / 2)
+    shot_count = max(1, math.ceil(target_duration / avg_dur))
 
     plan: list[tuple[str, float]] = []
     for idx in range(shot_count):
@@ -719,12 +728,12 @@ def create_video(
         raise RuntimeError("moviepy is not installed") from exc
 
     w, h = config.VIDEO_WIDTH, config.VIDEO_HEIGHT
-    max_duration = float(getattr(config, "VIDEO_MAX_DURATION_SECONDS", 59.0))
     target_duration = audio_duration if audio_duration > 0 else config.VIDEO_DURATION_TARGET
+    max_duration = float(getattr(config, "VIDEO_MAX_DURATION_SECONDS", 59.0))
     if target_duration > max_duration:
         logger.info("Clamping target duration from %.2fs to %.2fs to keep Short under 60s",
                     target_duration, max_duration)
-        target_duration = max_duration
+        target_duration = _clamp_short_duration(target_duration)
     transition_dur = getattr(config, "VIDEO_TRANSITION_DURATION", 0.35)
     downloaded: list[Path] = []
     video_clips: list[Any] = []
@@ -849,7 +858,7 @@ def create_video(
         if target_duration > max_duration:
             logger.info("Clamping resolved duration from %.2fs to %.2fs to keep Short under 60s",
                         target_duration, max_duration)
-            target_duration = max_duration
+            target_duration = _clamp_short_duration(target_duration)
             tts_audio = tts_audio.subclip(0, target_duration)
 
         base = _fit_base_video_duration(base, target_duration, vfx)

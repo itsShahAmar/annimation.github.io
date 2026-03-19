@@ -108,7 +108,7 @@ SUBTITLE_WORD_TIMING: bool = True      # scale each caption's duration by word c
 SUBTITLE_ADAPTIVE_FONT: bool = True    # bigger font for short (1-2 word) power bursts
 SUBTITLE_POP_SCALE: float = 1.25      # bigger pop for recipe reveals
 SUBTITLE_ALL_CAPS: bool = True         # render captions in uppercase for impact
-SUBTITLE_DELAY: float = 0.05          # small offset to avoid perceived subtitle lag behind narration
+SUBTITLE_DELAY: float = 0.05          # intentional tiny trailing offset; lowered from 0.25s to reduce lag
 SUBTITLE_END_BUFFER: float = 0.4      # seconds of padding at the end; prevents captions outrunning speech
 
 # ---------------------------------------------------------------------------
