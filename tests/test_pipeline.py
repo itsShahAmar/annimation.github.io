@@ -2,6 +2,7 @@
 
 import sys
 import unittest
+import importlib
 from unittest.mock import MagicMock, patch
 
 
@@ -9,9 +10,8 @@ class TestPipelineWithoutThumbnail(unittest.TestCase):
     """Ensure the pipeline no longer imports or passes custom thumbnails."""
 
     def setUp(self):
-        sys.modules.pop("src.pipeline", None)
         import src.pipeline as pipeline
-        self.pipeline = pipeline
+        self.pipeline = importlib.reload(pipeline)
 
     @patch("src.pipeline._cleanup")
     def test_run_pipeline_uploads_without_thumbnail_argument(self, mock_cleanup):
