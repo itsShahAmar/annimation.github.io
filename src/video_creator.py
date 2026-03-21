@@ -860,22 +860,33 @@ def create_video(
                 import numpy as np
 
                 def _animation_grade_frame(frame: Any) -> Any:
-                    """Apply a warm food-style colour grade.
+                    """Apply Shorts color grade.
 
-                    Boosts warm tones (reds and ambers) for appetite appeal
-                    while maintaining natural food colours.
+                    Uses filmic contrast and warmer channel balancing when
+                    ``VIDEO_CINEMATIC_LOOK`` is enabled (default). Falls back
+                    to the legacy warm grade when it is disabled.
                     """
                     f = frame.astype("float32") / 255.0
-                    # Stronger S-curve contrast for punchy animation feel
-                    f = np.clip(f * 1.12 - 0.06, 0.0, 1.0)
-                    # Saturation boost: push colours away from grey (luminance 0.299R + 0.587G + 0.114B)
+                    if getattr(config, "VIDEO_CINEMATIC_LOOK", True):
+                        # Filmic contrast curve.
+                        f = np.clip(f * 1.16 - 0.08, 0.0, 1.0)
+                        sat_boost = 1.30
+                    else:
+                        # Legacy warm grade for compatibility.
+                        f = np.clip(f * 1.12 - 0.06, 0.0, 1.0)
+                        sat_boost = 1.25
+
                     lum = (0.299 * f[:, :, 0] + 0.587 * f[:, :, 1] + 0.114 * f[:, :, 2])
                     lum = lum[:, :, np.newaxis]
-                    sat_boost = 1.25
                     f = np.clip(lum + sat_boost * (f - lum), 0.0, 1.0)
-                    # Warm-cool comic tint: warm reds, cool blues stay vivid
-                    f[:, :, 0] = np.clip(f[:, :, 0] * 1.05, 0.0, 1.0)  # red channel boost
-                    f[:, :, 1] = np.clip(f[:, :, 1] * 1.02, 0.0, 1.0)  # green slight boost
+                    if getattr(config, "VIDEO_CINEMATIC_LOOK", True):
+                        # Warm cinematic tint: stronger amber highlights, restrained shadows.
+                        f[:, :, 0] = np.clip(f[:, :, 0] * 1.08, 0.0, 1.0)
+                        f[:, :, 1] = np.clip(f[:, :, 1] * 1.03, 0.0, 1.0)
+                        f[:, :, 2] = np.clip(f[:, :, 2] * 0.96, 0.0, 1.0)  # reduce blue for warmer filmic look
+                    else:
+                        f[:, :, 0] = np.clip(f[:, :, 0] * 1.05, 0.0, 1.0)
+                        f[:, :, 1] = np.clip(f[:, :, 1] * 1.02, 0.0, 1.0)
                     return (f * 255).astype("uint8")
 
                 final = final.fl_image(_animation_grade_frame)
