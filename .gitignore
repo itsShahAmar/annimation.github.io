@@ -13,6 +13,10 @@ venv/
 
 # Output artifacts
 output/
+artifacts/
+
+# Music and video cache
+cache/
 
 # OS files
 .DS_Store

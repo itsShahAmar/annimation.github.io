@@ -1,58 +1,104 @@
-name: Funny Animation Shorts Factory
+name: Food Making Videos Factory
 
 on:
   schedule:
-    - cron: '0 */08 * * *' 
-  workflow_dispatch:  # Allow manual trigger
+    - cron: '0 */8 * * *'   # Every 8 hours
+  workflow_dispatch:          # Manual trigger — supports dry-run via inputs
+    inputs:
+      dry_run:
+        description: 'Skip YouTube upload (dry-run mode)'
+        required: false
+        default: 'false'
+        type: boolean
 
 permissions:
-  contents: read
+  contents: write   # Needed to upload artifacts via actions/upload-artifact
 
 concurrency:
-  group: funny-animation-shorts-${{ github.ref }}
+  group: food-making-videos-${{ github.ref }}
   cancel-in-progress: true  # Cancel stale runs so only the latest execution continues
 
 jobs:
-  funny-animation-shorts:
+  generate-and-publish:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
 
     steps:
+      # ------------------------------------------------------------------ #
+      # 1. Checkout
+      # ------------------------------------------------------------------ #
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Python
+      # ------------------------------------------------------------------ #
+      # 2. Python setup with pip caching
+      # ------------------------------------------------------------------ #
+      - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
           cache: 'pip'
 
+      # ------------------------------------------------------------------ #
+      # 3. System dependencies (ffmpeg, ImageMagick, fonts)
+      # ------------------------------------------------------------------ #
       - name: Install system dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y ffmpeg imagemagick fonts-liberation
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            ffmpeg imagemagick fonts-liberation fonts-dejavu
 
       - name: Fix ImageMagick security policy for MoviePy text rendering
         run: |
           # Allow @filename reads needed by MoviePy TextClip
           if [ -f /etc/ImageMagick-6/policy.xml ]; then
-            sudo sed -i 's/<policy domain="path" rights="none" pattern="@\*"/<policy domain="path" rights="read|write" pattern="@\*"/g' /etc/ImageMagick-6/policy.xml
+            sudo sed -i \
+              's/<policy domain="path" rights="none" pattern="@\*"/<policy domain="path" rights="read|write" pattern="@\*"/g' \
+              /etc/ImageMagick-6/policy.xml
           fi
 
+      # ------------------------------------------------------------------ #
+      # 4. Python dependencies
+      # ------------------------------------------------------------------ #
       - name: Install Python dependencies
         run: python -m pip install --disable-pip-version-check -r requirements.txt
 
-      - name: Run Funny Animation Shorts Factory pipeline
+      # ------------------------------------------------------------------ #
+      # 5. Ensure artifacts directory exists for digest + audit logs
+      # ------------------------------------------------------------------ #
+      - name: Create artifacts directory
+        run: mkdir -p artifacts
+
+      # ------------------------------------------------------------------ #
+      # 6. Run the Food Making Videos Factory pipeline
+      # ------------------------------------------------------------------ #
+      - name: Run pipeline
         env:
+          # --- Required secrets ---
           YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
           YOUTUBE_TOKEN: ${{ secrets.YOUTUBE_TOKEN }}
           PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
-          NEWSAPI_KEY: ${{ secrets.NEWSAPI_KEY }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
-          # Optional: Pixabay API key enables Pixabay Music as the primary music source
+          # --- Optional API keys ---
+          NEWSAPI_KEY: ${{ secrets.NEWSAPI_KEY }}
           PIXABAY_API_KEY: ${{ secrets.PIXABAY_API_KEY }}
-          # Optional: Unsplash key enables food-photography image fallback
           UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
-          # Optional: Freesound key enables Freesound as a music fallback source
           FREESOUND_API_KEY: ${{ secrets.FREESOUND_API_KEY }}
+          YOUTUBE_DATA_API_KEY: ${{ secrets.YOUTUBE_DATA_API_KEY }}
+          # --- Pipeline behaviour flags ---
+          DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
+          VIDEO_FAST_RENDER: 'false'
         run: python -m src.pipeline
+
+      # ------------------------------------------------------------------ #
+      # 7. Upload audit logs and trend digests as workflow artifacts
+      # ------------------------------------------------------------------ #
+      - name: Upload pipeline artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pipeline-artifacts-${{ github.run_id }}
+          path: artifacts/
+          retention-days: 14
+          if-no-files-found: ignore
+
