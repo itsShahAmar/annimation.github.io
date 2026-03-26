@@ -161,6 +161,25 @@ class TestBuildCredentials(unittest.TestCase):
         self.assertIn("OAuth2 token refresh failed", str(ctx.exception))
         self.assertIn("YOUTUBE_TOKEN", str(ctx.exception))
 
+    @patch("config.YOUTUBE_CLIENT_SECRET_JSON", _VALID_CLIENT_SECRET)
+    @patch("config.YOUTUBE_TOKEN_JSON", _VALID_TOKEN)
+    def test_raises_with_scope_hint_when_invalid_scope(self):
+        """invalid_scope refresh failure should raise with scope-specific remediation message."""
+        import src.uploader as uploader
+
+        mock_creds = self._make_mock_creds()
+        mock_creds.refresh.side_effect = Exception("invalid_scope: Bad Request")
+
+        with patch("google.oauth2.credentials.Credentials", return_value=mock_creds), \
+             patch("google.auth.transport.requests.Request"):
+            with self.assertRaises(RuntimeError) as ctx:
+                uploader._build_credentials()
+
+        msg = str(ctx.exception)
+        self.assertIn("invalid_scope", msg)
+        self.assertIn("https://www.googleapis.com/auth/youtube.upload", msg)
+        self.assertIn("https://www.googleapis.com/auth/youtube", msg)
+
 
 class TestIsFatalOAuthError(unittest.TestCase):
     """Tests for _is_fatal_oauth_error()."""

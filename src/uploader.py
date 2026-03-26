@@ -65,6 +65,12 @@ def _build_credentials() -> Any:
     try:
         creds.refresh(Request())
     except Exception as exc:  # noqa: BLE001
+        if "invalid_scope" in str(exc).lower():
+            raise RuntimeError(
+                "OAuth2 token refresh failed: invalid_scope. Re-run the auth flow using the exact "
+                "required scopes and update YOUTUBE_TOKEN. Required scopes: "
+                + ", ".join(_YOUTUBE_SCOPES)
+            ) from exc
         raise RuntimeError(
             "OAuth2 token refresh failed. Re-run auth flow and update YOUTUBE_TOKEN."
         ) from exc
