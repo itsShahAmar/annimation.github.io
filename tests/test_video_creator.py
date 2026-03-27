@@ -2,6 +2,7 @@
 
 import sys
 import unittest
+from pathlib import Path
 from unittest.mock import MagicMock
 
 
@@ -141,4 +142,104 @@ class TestFitBaseVideoDuration(unittest.TestCase):
         self.assertIs(result, base)
         base.fx.assert_not_called()
         base.subclip.assert_not_called()
+
+
+class TestProbeVideoDuration(unittest.TestCase):
+    """Tests for src.video_creator._probe_video_duration()."""
+
+    def setUp(self):
+        import src.video_creator as vc
+        self.vc = vc
+
+    def test_returns_float_when_ffprobe_succeeds(self):
+        from unittest.mock import patch, MagicMock
+        mock_result = MagicMock()
+        mock_result.stdout = "5.10\n"
+        with patch("subprocess.run", return_value=mock_result):
+            result = self.vc._probe_video_duration(Path("/tmp/fake.mp4"))
+        self.assertAlmostEqual(result, 5.10)
+
+    def test_returns_none_when_ffprobe_output_is_na(self):
+        from unittest.mock import patch, MagicMock
+        mock_result = MagicMock()
+        mock_result.stdout = "N/A\n"
+        with patch("subprocess.run", return_value=mock_result):
+            result = self.vc._probe_video_duration(Path("/tmp/fake.mp4"))
+        self.assertIsNone(result)
+
+    def test_returns_none_when_ffprobe_output_is_empty(self):
+        from unittest.mock import patch, MagicMock
+        mock_result = MagicMock()
+        mock_result.stdout = ""
+        with patch("subprocess.run", return_value=mock_result):
+            result = self.vc._probe_video_duration(Path("/tmp/fake.mp4"))
+        self.assertIsNone(result)
+
+    def test_returns_none_when_ffprobe_raises(self):
+        from unittest.mock import patch
+        with patch("subprocess.run", side_effect=FileNotFoundError("ffprobe not found")):
+            result = self.vc._probe_video_duration(Path("/tmp/fake.mp4"))
+        self.assertIsNone(result)
+
+
+class TestLoadSafeVideoClip(unittest.TestCase):
+    """Tests for src.video_creator._load_safe_video_clip()."""
+
+    def setUp(self):
+        import src.video_creator as vc
+        self.vc = vc
+
+    def _make_clip(self, duration: float) -> MagicMock:
+        clip = MagicMock()
+        clip.duration = duration
+        trimmed = MagicMock()
+        trimmed.duration = duration - self.vc._CLIP_TAIL_TRIM_S
+        clip.subclip.return_value = trimmed
+        return clip
+
+    def test_trims_tail_when_ffprobe_matches_moviepy_duration(self):
+        """When ffprobe agrees with MoviePy, a _CLIP_TAIL_TRIM_S tail is removed."""
+        from unittest.mock import patch
+        clip = self._make_clip(5.10)
+        VideoFileClip = MagicMock(return_value=clip)
+
+        with patch.object(self.vc, "_probe_video_duration", return_value=5.10):
+            result = self.vc._load_safe_video_clip(VideoFileClip, Path("/tmp/fake.mp4"))
+
+        clip.subclip.assert_called_once_with(0, 5.10 - self.vc._CLIP_TAIL_TRIM_S)
+
+    def test_uses_ffprobe_duration_when_lower_than_moviepy(self):
+        """When ffprobe reports a shorter duration, that is used as the safe end."""
+        from unittest.mock import patch
+        clip = self._make_clip(5.10)
+        VideoFileClip = MagicMock(return_value=clip)
+
+        with patch.object(self.vc, "_probe_video_duration", return_value=5.07):
+            result = self.vc._load_safe_video_clip(VideoFileClip, Path("/tmp/fake.mp4"))
+
+        clip.subclip.assert_called_once_with(0, 5.07 - self.vc._CLIP_TAIL_TRIM_S)
+
+    def test_falls_back_to_moviepy_duration_when_ffprobe_unavailable(self):
+        """When ffprobe is unavailable, the MoviePy duration minus the tail buffer is used."""
+        from unittest.mock import patch
+        clip = self._make_clip(5.10)
+        VideoFileClip = MagicMock(return_value=clip)
+
+        with patch.object(self.vc, "_probe_video_duration", return_value=None):
+            result = self.vc._load_safe_video_clip(VideoFileClip, Path("/tmp/fake.mp4"))
+
+        clip.subclip.assert_called_once_with(0, 5.10 - self.vc._CLIP_TAIL_TRIM_S)
+
+    def test_does_not_trim_when_safe_end_exceeds_duration(self):
+        """No subclip call when the clip is too short to trim."""
+        from unittest.mock import patch
+        clip = MagicMock()
+        clip.duration = 0.05  # shorter than _CLIP_TAIL_TRIM_S (0.1)
+        VideoFileClip = MagicMock(return_value=clip)
+
+        with patch.object(self.vc, "_probe_video_duration", return_value=None):
+            result = self.vc._load_safe_video_clip(VideoFileClip, Path("/tmp/fake.mp4"))
+
+        clip.subclip.assert_not_called()
+        self.assertIs(result, clip)
 
