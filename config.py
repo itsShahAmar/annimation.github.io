@@ -170,3 +170,48 @@ VIRAL_TAGS_TARGET_COUNT: int = 45  # Target number of tags (30-50 range)
 # Enhanced script writing — step-by-step instructions
 # ---------------------------------------------------------------------------
 ENHANCED_SCRIPT_ENABLED: bool = True  # Use enhanced_scriptwriter for step-by-step scripts
+
+# ---------------------------------------------------------------------------
+# Trend intelligence — weighted scoring and novelty filtering
+# ---------------------------------------------------------------------------
+TREND_SCORER_ENABLED: bool = True        # Use trend_scorer for weighted topic selection
+TREND_HISTORY_PATH: str = "artifacts/topic_history.json"  # Per-run novelty history file
+TREND_DIGEST_ENABLED: bool = True        # Save machine-readable daily trend digest artifact
+TREND_DIGEST_DIR: str = "artifacts"      # Output directory for trend digest JSON files
+TREND_TOP_K: int = 5                     # Number of top-scoring topics to randomly choose from
+
+# ---------------------------------------------------------------------------
+# CTA engine — conversion-focused hooks and subscribe prompts
+# ---------------------------------------------------------------------------
+CTA_ENGINE_ENABLED: bool = True          # Inject CTA prompts into narration script
+CTA_STRATEGY: str = "auto"              # "auto" | "soft" | "urgency" | "community" | "value" | "challenge"
+CTA_AB_VARIANT: str = "A"              # "A" or "B" — A/B test variant for this run
+CTA_PLATFORM: str = "youtube_shorts"   # Target platform for CTA template selection
+
+# ---------------------------------------------------------------------------
+# Cinematic style packs — visual and narrative style profiles
+# ---------------------------------------------------------------------------
+STYLE_PACK_ENABLED: bool = True          # Use style packs to enrich scene queries and color grades
+STYLE_PACK_NAME: str = "auto"           # "auto" | "golden_hour" | "macro_studio" | "street_energy" | etc.
+STYLE_PACK_ENRICH_SCENES: bool = True   # Add visual cues to stock footage search queries
+
+# ---------------------------------------------------------------------------
+# QA validation gates — automated quality control
+# ---------------------------------------------------------------------------
+QA_ENABLED: bool = True                  # Run QA validation before upload
+QA_HARD_FAIL: bool = False              # If True, abort pipeline on QA failure (default: warn only)
+QA_MIN_CONFIDENCE: float = 0.50         # Minimum QA confidence score to proceed (0.0–1.0)
+QA_MIN_DURATION: float = 15.0           # Minimum video duration in seconds
+QA_MAX_DURATION: float = 60.0           # Maximum video duration in seconds
+
+# ---------------------------------------------------------------------------
+# Run summaries and audit logs — observability and operations
+# ---------------------------------------------------------------------------
+RUN_SUMMARY_ENABLED: bool = True         # Emit structured run summary at end of pipeline
+AUDIT_LOG_ENABLED: bool = True           # Save JSON audit log to artifacts directory
+AUDIT_LOG_DIR: str = "artifacts"         # Output directory for audit log JSON files
+
+# ---------------------------------------------------------------------------
+# Dry-run mode — end-to-end pipeline test without upload
+# ---------------------------------------------------------------------------
+DRY_RUN: bool = _env_flag("DRY_RUN", False)  # Set DRY_RUN=true to skip upload step
