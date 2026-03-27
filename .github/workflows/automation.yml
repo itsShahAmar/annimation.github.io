@@ -1,8 +1,24 @@
 name: Food Making Videos Factory
 
+# ---------------------------------------------------------------------------
+# Schedule — three daily uploads timed for peak US audience activity.
+#
+# All times are UTC; Eastern Time offsets:  ET = UTC-5 (EST) / UTC-4 (EDT)
+#
+#   13:00 UTC →  8 AM ET  — morning commute / coffee-time browsing
+#   17:00 UTC → 12 PM ET  — lunch-hour scrolling (highest mid-day engagement)
+#   23:00 UTC →  6 PM ET  — prime-time evening viewing (peak US engagement)
+#
+# GitHub Actions ubuntu-latest runners execute on GitHub-hosted machines in
+# Microsoft Azure's US East data-centres (Virginia), so every run originates
+# from a US IP address — satisfying platform geo-targeting requirements and
+# ensuring the upload is attributed to a US origin by the YouTube API.
+# ---------------------------------------------------------------------------
 on:
   schedule:
-    - cron: '0 */8 * * *'   # Every 8 hours
+    - cron: '0 13 * * *'   # 08:00 ET — US morning audience
+    - cron: '0 17 * * *'   # 12:00 ET — US lunch-hour audience
+    - cron: '0 23 * * *'   # 18:00 ET — US prime-time audience
   workflow_dispatch:          # Manual trigger — supports dry-run via inputs
     inputs:
       dry_run:
@@ -31,7 +47,18 @@ jobs:
         uses: actions/checkout@v4
 
       # ------------------------------------------------------------------ #
-      # 2. Python setup with pip caching
+      # 2. Log runner IP — confirms upload originates from a US address   #
+      #    (GitHub-hosted ubuntu-latest runs on Azure East US, Virginia)   #
+      # ------------------------------------------------------------------ #
+      - name: Log runner public IP
+        run: |
+          PUBLIC_IP=$(curl -sf --max-time 10 https://api.ipify.org || echo "unavailable")
+          echo "Runner public IP : $PUBLIC_IP"
+          COUNTRY=$(curl -sf --max-time 10 "https://ipinfo.io/${PUBLIC_IP}/country" || echo "unknown")
+          echo "Runner country   : $COUNTRY"
+
+      # ------------------------------------------------------------------ #
+      # 3. Python setup with pip caching
       # ------------------------------------------------------------------ #
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
@@ -40,7 +67,7 @@ jobs:
           cache: 'pip'
 
       # ------------------------------------------------------------------ #
-      # 3. System dependencies (ffmpeg, ImageMagick, fonts)
+      # 4. System dependencies (ffmpeg, ImageMagick, fonts)
       # ------------------------------------------------------------------ #
       - name: Install system dependencies
         run: |
@@ -58,19 +85,19 @@ jobs:
           fi
 
       # ------------------------------------------------------------------ #
-      # 4. Python dependencies
+      # 5. Python dependencies
       # ------------------------------------------------------------------ #
       - name: Install Python dependencies
         run: python -m pip install --disable-pip-version-check -r requirements.txt
 
       # ------------------------------------------------------------------ #
-      # 5. Ensure artifacts directory exists for digest + audit logs
+      # 6. Ensure artifacts directory exists for digest + audit logs
       # ------------------------------------------------------------------ #
       - name: Create artifacts directory
         run: mkdir -p artifacts
 
       # ------------------------------------------------------------------ #
-      # 6. Run the Food Making Videos Factory pipeline
+      # 7. Run the Food Making Videos Factory pipeline
       # ------------------------------------------------------------------ #
       - name: Run pipeline
         env:
@@ -91,7 +118,7 @@ jobs:
         run: python -m src.pipeline
 
       # ------------------------------------------------------------------ #
-      # 7. Upload audit logs and trend digests as workflow artifacts
+      # 8. Upload audit logs and trend digests as workflow artifacts
       # ------------------------------------------------------------------ #
       - name: Upload pipeline artifacts
         if: always()

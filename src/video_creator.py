@@ -20,6 +20,7 @@ import logging
 import math
 import os
 import random
+import subprocess
 import tempfile
 from pathlib import Path
 from typing import Any
@@ -97,6 +98,84 @@ def _resolve_target_duration(
     if measured_tts_duration and measured_tts_duration > 0:
         resolved = max(resolved, measured_tts_duration)
     return resolved
+
+
+# ---------------------------------------------------------------------------
+# Clip safety helpers — prevent "bytes wanted but 0 bytes read" MoviePy warning
+# ---------------------------------------------------------------------------
+
+# Seconds trimmed from the tail of every downloaded video clip.  MP4 containers
+# obtained from stock-footage APIs sometimes report a duration that exceeds the
+# number of frames that ffmpeg can actually decode (truncated-tail artifact).
+# MoviePy's ffmpeg_reader then emits a UserWarning when it reaches the
+# unreadable tail: "N bytes wanted but 0 bytes read … using last valid frame".
+# Trimming this small buffer keeps all frame reads comfortably in-bounds without
+# any visible impact on the looped / subclipped footage used by the pipeline.
+_CLIP_TAIL_TRIM_S: float = 0.1
+
+
+def _probe_video_duration(path: Path) -> float | None:
+    """Return the video-stream duration reported by ffprobe, or ``None`` on failure.
+
+    Queries the ``v:0`` stream duration directly.  This is more reliable than
+    the container-level duration that MoviePy reads from the MP4 header, which
+    can be inflated by a few frames when the encoder did not flush the container
+    correctly (the root cause of the "bytes wanted but 0 bytes read" warning).
+    """
+    try:
+        result = subprocess.run(
+            [
+                "ffprobe", "-v", "error",
+                "-select_streams", "v:0",
+                "-show_entries", "stream=duration",
+                "-of", "default=noprint_wrappers=1:nokey=1",
+                str(path),
+            ],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        val = result.stdout.strip()
+        if val and val.lower() != "n/a":
+            return float(val)
+    except Exception:  # noqa: BLE001
+        pass
+    return None
+
+
+def _load_safe_video_clip(VideoFileClip: Any, path: Path, audio: bool = False) -> Any:
+    """Load a ``VideoFileClip`` and trim its tail to eliminate truncated-frame warnings.
+
+    Stock-footage MP4 files sometimes have a container duration that exceeds
+    the number of actually-decodable frames.  When MoviePy's ffmpeg_reader
+    attempts to read those phantom frames it logs::
+
+        UserWarning: Warning: in file <path>, N bytes wanted but 0 bytes read,
+        at frame X/Y … Using the last valid frame instead.
+
+    This function fixes the issue permanently by:
+
+    1. Loading the clip via ``VideoFileClip``.
+    2. Probing the true stream duration with ``ffprobe`` (more accurate than the
+       container metadata MoviePy relies on).
+    3. Trimming to ``min(moviepy_duration, ffprobe_duration) − _CLIP_TAIL_TRIM_S``
+       so the ffmpeg reader never reaches the potentially-incomplete tail.
+
+    The ``_CLIP_TAIL_TRIM_S`` buffer (0.1 s) is visually imperceptible because
+    all clips are subsequently looped or subclipped to the exact scene duration.
+    """
+    vc = VideoFileClip(str(path), audio=audio)
+
+    probed = _probe_video_duration(path)
+    safe_end = vc.duration
+    if probed is not None and probed < vc.duration:
+        safe_end = probed
+
+    safe_end -= _CLIP_TAIL_TRIM_S
+    if 0 < safe_end < vc.duration:
+        vc = vc.subclip(0, safe_end)
+
+    return vc
 
 
 def _fit_base_video_duration(base: Any, target_duration: float, vfx: Any) -> Any:
@@ -706,7 +785,7 @@ def create_video(
                 try:
                     clip_path = _download_file(url, ".mp4")
                     downloaded.append(clip_path)
-                    vc = VideoFileClip(str(clip_path), audio=False)
+                    vc = _load_safe_video_clip(VideoFileClip, clip_path)
                     scene_dur = time_per_scene + transition_dur
                     if vc.duration < scene_dur:
                         loops = math.ceil(scene_dur / vc.duration)
@@ -763,7 +842,7 @@ def create_video(
                     )
                     if alt_path and alt_path.suffix.lower() == ".mp4":
                         downloaded.append(alt_path)
-                        vc = VideoFileClip(str(alt_path), audio=False)
+                        vc = _load_safe_video_clip(VideoFileClip, alt_path)
                         if vc.duration < scene_dur:
                             loops = math.ceil(scene_dur / vc.duration)
                             vc = vc.loop(n=loops)
